@@ -469,7 +469,7 @@ function renderCBtn(b, s, date) {
 }
 
 /* ─────────────────────────────────────────
-   DO CHECK (แก้ไขส่วนนี้)
+   DO CHECK (แก้ไขให้เปลี่ยนสีทันทีเมื่อกดปุ่มเดียว)
 ───────────────────────────────────────── */
 async function doCheck(btnEl, phone, nickname, school, dept, round, type, label, date) {
   if (btnEl.classList.contains('saving') || btnEl.classList.contains('done')) return;
@@ -491,17 +491,12 @@ async function doCheck(btnEl, phone, nickname, school, dept, round, type, label,
     btnEl.textContent = label + ' ✓';
     showToast(`✅ เช็คชื่อ ${nickname} — ${label}`, 'ok');
 
-    // --- ส่วนที่เพิ่มเข้ามา ---
-    // ตรวจสอบว่าปุ่มทั้งหมดใน Card นี้ถูกเช็คครบหรือยัง
+    // --- ส่วนที่แก้ไข: เปลี่ยนแถบเป็นสีเทาทันทีเมื่อกดปุ่มสำเร็จ ---
     const card = btnEl.closest('.card');
-    const allBtns = card.querySelectorAll('.cbtn');
-    const isAllDone = [...allBtns].every(b => b.classList.contains('done'));
-    
-    // ถ้าครบแล้ว ให้เปลี่ยนสีพื้นหลังทั้งแถบเป็นสีเทา (done)
-    if (isAllDone) {
-      card.classList.add('done');
+    if (card) {
+      card.classList.add('done'); 
     }
-    // -----------------------
+    // ----------------------------------------------------
 
     updateChips();
   } catch(e) {
