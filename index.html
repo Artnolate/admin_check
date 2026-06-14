@@ -158,7 +158,6 @@ a{color:var(--accent)}
 </head>
 <body>
 
-<!-- ── HEADER ─────────────────────────────────────────── -->
 <header class="hdr">
   <div class="brand">
     <span class="brand-title">📋 ระบบเช็คชื่อ</span>
@@ -170,7 +169,6 @@ a{color:var(--accent)}
   </div>
 </header>
 
-<!-- ── TABS ───────────────────────────────────────────── -->
 <nav class="tabs">
   <button class="tab active" onclick="goTab('attendance',this)">
     ✅ เช็คชื่อ
@@ -180,9 +178,6 @@ a{color:var(--accent)}
   </button>
 </nav>
 
-<!-- ══════════════════════════════════════════
-     PAGE: ATTENDANCE
-══════════════════════════════════════════ -->
 <div class="page active" id="page-attendance">
 
   <div class="toolbar">
@@ -229,9 +224,6 @@ a{color:var(--accent)}
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
-     PAGE: REPORT
-══════════════════════════════════════════ -->
 <div class="page" id="page-report">
   <div class="toolbar">
     <div class="field">
@@ -246,13 +238,11 @@ a{color:var(--accent)}
 
 <div id="toast"></div>
 
-<!-- ══════════════════════════════════════════
-     SCRIPT
-══════════════════════════════════════════ -->
 <script>
 /* ─────────────────────────────────────────
    CONFIG
 ───────────────────────────────────────── */
+// นำ URL Web App ของคุณมาใส่ตรงนี้
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyftmXqCv2YbMtPLyHR1ANdJaZ4zTCyNDDrY5shpg_AvwM_ZY7diIM__-a1m7a0xNig/exec';
 
 /* ─────────────────────────────────────────
@@ -409,7 +399,7 @@ async function renderAttendance() {
         <span class="badge badge-c">${esc(s.courseRaw)}</span>
         ${!isMao?`<span class="mi"><span class="mi-ico">🔢</span>เหลือ ${esc(String(showRem))} ครั้ง</span>`:''}
         ${s.expiry?`<span class="mi"><span class="mi-ico">📆</span>${fmtDate(s.expiry)}</span>`:''}
-        ${s.round?`<span class="mi"><span class="mi-ico">⏰</span>${esc(s.round)}</span>`:''}
+        ${s.round?`<span class="mi"><span class="mi-ico">⏰</span>รอบที่ ${esc(s.round)}</span>`:''}
       </div>
       ${alerts?`<div class="alerts">${alerts}</div>`:''}
     </div>
@@ -438,15 +428,16 @@ function buildBtns(s, date, serverChecked) {
   const hasLive  = /ติวสด/.test(c);
   const hasOnl   = /ออนไลน์/.test(c);
 
+  // กำหนด Type Code เป็นภาษาไทยเลย เพื่อให้ตรงกับ Backend คอลัมน์ "รูปแบบการเรียน"
   let types = [];
   if (isMao || (hasLive && hasOnl)) {
-    types = ['live','online_theory','online_draw'];
+    types = ['ติวสด','ออนไลน์วิชาภาค','ออนไลน์วาดเส้น'];
   } else if (hasLive) {
-    types = ['live'];
+    types = ['ติวสด'];
   } else if (hasOnl) {
-    types = ['online_theory','online_draw'];
+    types = ['ออนไลน์วิชาภาค','ออนไลน์วาดเส้น'];
   } else {
-    types = ['live']; // fallback
+    types = ['ติวสด']; // fallback
   }
 
   return types.map(t => {
@@ -456,9 +447,9 @@ function buildBtns(s, date, serverChecked) {
 }
 
 function typeLabel(type, dept) {
-  if (type === 'live')          return '✏️ ติวสด';
-  if (type === 'online_draw')   return '🖊️ วาดเส้น';
-  if (type === 'online_theory') return `📚 ${deptSubject(dept)}`;
+  if (type === 'ติวสด')          return '✏️ ติวสด';
+  if (type === 'ออนไลน์วาดเส้น')   return '🖊️ วาดเส้น';
+  if (type === 'ออนไลน์วิชาภาค') return `📚 ${deptSubject(dept)}`;
   return type;
 }
 function deptSubject(dept) {
@@ -475,33 +466,31 @@ function deptSubject(dept) {
 
 function renderCBtn(b, s, date) {
   if (b.done) return `<button class="cbtn done">${b.label} ✓</button>`;
-  const onclick = `doCheck(this,'${esc(s.phone)}','${esc(s.nickname)}','${esc(s.fullname)}','${esc(s.dept)}','${b.type}','${esc(b.label)}','${date}')`;
+  // ส่งพารามิเตอร์ใหม่ให้ตรงกับ Backend: date, nickname, school, phone, round, type
+  const onclick = `doCheck(this,'${esc(s.phone)}','${esc(s.nickname)}','${esc(s.school)}','${esc(s.round)}','${b.type}','${esc(b.label)}','${date}')`;
   return `<button class="cbtn" onclick="${onclick}">${b.label}</button>`;
 }
 
 /* ─────────────────────────────────────────
    DO CHECK — post to GAS then update UI
 ───────────────────────────────────────── */
-async function doCheck(btnEl, phone, nickname, fullname, dept, type, label, date) {
+async function doCheck(btnEl, phone, nickname, school, round, type, label, date) {
   // Prevent double tap
   if (btnEl.classList.contains('saving') || btnEl.classList.contains('done')) return;
   btnEl.classList.add('saving');
   btnEl.textContent = '⏳…';
 
-  const now     = new Date();
-  const timeStr = now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
-
   try {
     const resp = await gasPost({
       action: 'addLog',
-      date, phone, nickname, fullname, dept, type, label, time: timeStr
+      date, phone, nickname, school, round, type
     });
     if (resp && resp.error) throw new Error(resp.error);
 
     // success
     markLocal(phone, date, type);
-    // update logCache optimistically
-    logCache.push({ date, phone, nickname, fullname, dept, type, time: timeStr });
+    // update logCache optimistically (ใช้ฟิลด์ที่สอดคล้องกับคอลัมน์ใหม่)
+    logCache.push({ date, phone, nickname, school, round, type });
 
     btnEl.classList.remove('saving');
     btnEl.classList.add('done');
@@ -551,17 +540,17 @@ async function renderReport() {
     const tbody = rows.map((r,i) => `
 <tr>
   <td class="num">${i+1}</td>
-  <td><strong>${esc(r.nickname||'')}</strong> <span style="color:var(--txt2);font-size:13px">${esc(r.fullname||'')}</span></td>
+  <td><strong>${esc(r.nickname||'')}</strong></td>
+  <td style="font-size:13px;color:var(--txt2)">${esc(r.school||'-')}</td>
   <td>${esc(r.phone||'')}</td>
-  <td style="font-size:13px;color:var(--txt2)">${esc(r.dept||'')}</td>
-  <td><span class="pill ${pillClass(r.type)}">${esc(r.label||r.type||'')}</span></td>
-  <td style="color:var(--txt3);font-size:13px">${esc(r.time||'')}</td>
+  <td style="color:var(--txt3);font-size:13px">${esc(r.round||'-')}</td>
+  <td><span class="pill ${pillClass(r.type)}">${esc(r.type||'')}</span></td>
 </tr>`).join('');
 
     box.innerHTML = `
 <div class="chips"><div class="chip chip-b">📋 ${fmtDateISO(date)} — ${rows.length} รายการ</div></div>
 <table class="rtable">
-  <thead><tr><th>#</th><th>ชื่อ</th><th>เบอร์โทร</th><th>ภาควิชา</th><th>ประเภท</th><th>เวลา</th></tr></thead>
+  <thead><tr><th>#</th><th>ชื่อ</th><th>โรงเรียน</th><th>เบอร์โทร</th><th>รอบ</th><th>รูปแบบ</th></tr></thead>
   <tbody>${tbody}</tbody>
 </table>`;
   } catch(e) {
@@ -571,8 +560,8 @@ async function renderReport() {
 
 function pillClass(t) {
   if (!t) return '';
-  if (t.includes('live'))   return 'pill-live';
-  if (t.includes('draw'))   return 'pill-draw';
+  if (t.includes('ติวสด'))   return 'pill-live';
+  if (t.includes('วาดเส้น')) return 'pill-draw';
   return 'pill-online';
 }
 
