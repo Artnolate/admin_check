@@ -469,7 +469,7 @@ function renderCBtn(b, s, date) {
 }
 
 /* ─────────────────────────────────────────
-   DO CHECK
+   DO CHECK (แก้ไขส่วนนี้)
 ───────────────────────────────────────── */
 async function doCheck(btnEl, phone, nickname, school, dept, round, type, label, date) {
   if (btnEl.classList.contains('saving') || btnEl.classList.contains('done')) return;
@@ -491,6 +491,18 @@ async function doCheck(btnEl, phone, nickname, school, dept, round, type, label,
     btnEl.textContent = label + ' ✓';
     showToast(`✅ เช็คชื่อ ${nickname} — ${label}`, 'ok');
 
+    // --- ส่วนที่เพิ่มเข้ามา ---
+    // ตรวจสอบว่าปุ่มทั้งหมดใน Card นี้ถูกเช็คครบหรือยัง
+    const card = btnEl.closest('.card');
+    const allBtns = card.querySelectorAll('.cbtn');
+    const isAllDone = [...allBtns].every(b => b.classList.contains('done'));
+    
+    // ถ้าครบแล้ว ให้เปลี่ยนสีพื้นหลังทั้งแถบเป็นสีเทา (done)
+    if (isAllDone) {
+      card.classList.add('done');
+    }
+    // -----------------------
+
     updateChips();
   } catch(e) {
     btnEl.classList.remove('saving');
@@ -498,6 +510,7 @@ async function doCheck(btnEl, phone, nickname, school, dept, round, type, label,
     showToast('บันทึกไม่สำเร็จ: ' + e.message, 'err');
   }
 }
+
 
 function updateChips() {
   const all   = document.querySelectorAll('.card');
@@ -636,3 +649,5 @@ function goTab(tab, el) {
 
 </body>
 </html>
+
+
