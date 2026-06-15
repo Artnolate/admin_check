@@ -530,21 +530,6 @@ function callGAS(fn, ...args) {
   });
 }
 
-function demoData(fn, ...args) {
-  if (fn === 'getStudents') return { success: true, data: [
-    { rowIndex:2, nickname:'ป๊อป', fullname:'ปภาดา รัตนสุข',    school:'สาธิตจุฬา',    dept:'สถาปัตยกรรม',  phone:'0812345678', course:'เหมา ติวสด + ออนไลน์',           remaining:'',  expire:'30/07/2568', period:'1', buttons:['ติวสด','วิชาภาค','วาดเส้น'], warnRemaining:false, warnExpire:false },
-    { rowIndex:3, nickname:'มิ้น', fullname:'ณิชาภัทร พิริยะ',  school:'เตรียมอุดม',   dept:'ศิลปกรรม',     phone:'0823456789', course:'ติวสด เข้ม 30 วัน',               remaining:'5', expire:'20/06/2568', period:'2', buttons:['ติวสด'],                     warnRemaining:false, warnExpire:true  },
-    { rowIndex:4, nickname:'ไอซ์', fullname:'ธนัท วงษ์สวรรค์', school:'เตรียมอุดม',   dept:'นิเทศศิลป์',   phone:'0834567890', course:'คอร์สออนไลน์ [10 ครั้ง/30 วัน]', remaining:'2', expire:'18/06/2568', period:'1', buttons:['วิชาภาค'],                   warnRemaining:true,  warnExpire:true  },
-    { rowIndex:5, nickname:'เฟิร์น',fullname:'วิชญา มาลัย',   school:'สวนกุหลาบ',     dept:'ภาพยนตร์',     phone:'0845678901', course:'Mix เหมา+ออนไลน์',               remaining:'',  expire:'10/08/2568', period:'3', buttons:['ติวสด','วิชาภาค','วาดเส้น'], warnRemaining:false, warnExpire:false },
-    { rowIndex:6, nickname:'นัท',  fullname:'วรนัน ศรีเมือง',  school:'หอวัง',         dept:'อนิเมชัน',     phone:'0856789012', course:'คอร์สออนไลน์ [Buffet/30 วัน]',   remaining:'8', expire:'25/07/2568', period:'1', buttons:['วิชาภาค','วาดเส้น'],         warnRemaining:false, warnExpire:false },
-    { rowIndex:7, nickname:'บีม',  fullname:'ปัณณทัต ชนะภัย', school:'สาธิตเกษตร',   dept:'พื้นฐาน',      phone:'0867890123', course:'คอร์สออนไลน์ [12 ครั้ง/30 วัน]', remaining:'3', expire:'05/07/2568', period:'2', buttons:['วาดเส้น'],                   warnRemaining:false, warnExpire:false },
-  ]};
-  if (fn === 'getAttendanceToday') return { success: true, checkedPhones: {} };
-  if (fn === 'saveAttendance')     return { success: true };
-  if (fn === 'getAttendanceLog')   return { success: true, data: [], countTutor: 0, countOnline: 0 };
-  return null;
-}
-
 // ============================================================
 // INIT
 // ============================================================
