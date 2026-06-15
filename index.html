@@ -3,850 +3,128 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ระบบเช็คชื่อ - ARTNOLATE</title>
+  <title>ระบบเช็คชื่อ — ARTNOLATE</title>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    /* ===== RESET ===== */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+    /* ใช้โทนสีและดีไซน์ที่เน้นความสะอาดและทันสมัย */
     :root {
-      --navy:       #1C2951;
-      --navy-dark:  #141e3d;
-      --navy-20:    rgba(28,41,81,0.12);
-      --orange:     #FF8C00;
-      --orange-bg:  #FFF4E0;
-      --white:      #FFFFFF;
-      --gray-50:    #F7F8FB;
-      --gray-100:   #ECEEF5;
-      --gray-200:   #D5D9E8;
-      --gray-400:   #8C95AE;
-      --gray-600:   #545D78;
-      --gray-800:   #2A3248;
-      --green:      #16A34A;
-      --red:        #DC2626;
-      --yellow:     #D97706;
-      --purple:     #7C3AED;
-      --locked-bg:  #F1F3F8;
-      --locked-col: #9CA3B8;
-      --font:       'Sarabun', sans-serif;
-      --r:          10px;
-      --r-sm:       6px;
-      --sh:         0 1px 8px rgba(28,41,81,0.09);
-      --sh-md:      0 4px 20px rgba(28,41,81,0.13);
+      --navy: #1C2951; --orange: #FF8C00; --white: #FFFFFF;
+      --gray-50: #F7F8FB; --gray-100: #ECEEF5; --gray-200: #D5D9E8;
+      --gray-600: #545D78; --gray-800: #2A3248; --green: #16A34A;
+      --purple: #7C3AED; --font: 'Sarabun', sans-serif;
     }
+    body { font-family: var(--font); background: var(--gray-50); color: var(--gray-800); margin: 0; padding-bottom: 50px; }
+    
+    /* Header */
+    .app-header { background: var(--navy); padding: 20px; color: var(--white); text-align: center; }
+    .app-header h1 { margin: 0; font-size: 20px; }
+    .app-header p { margin: 5px 0 0; font-size: 12px; color: var(--orange); letter-spacing: 2px; text-transform: uppercase; }
 
-    body {
-      font-family: var(--font);
-      background: var(--gray-50);
-      color: var(--gray-800);
-      font-size: 15px;
-      line-height: 1.55;
-      min-height: 100vh;
-    }
+    /* Tabs */
+    .tabs { display: flex; justify-content: center; background: var(--white); border-bottom: 1px solid var(--gray-200); }
+    .tab-btn { padding: 15px 25px; border: none; background: none; cursor: pointer; font-weight: 600; color: var(--gray-600); border-bottom: 3px solid transparent; }
+    .tab-btn.active { color: var(--navy); border-bottom-color: var(--orange); }
 
-    .app-wrapper { max-width: 940px; margin: 0 auto; padding-bottom: 72px; }
+    /* Page Content */
+    .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
+    .toolbar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .form-control { padding: 8px; border: 1px solid var(--gray-200); border-radius: 6px; flex: 1; }
 
-    /* ===== STICKY HEADER ===== */
-    .app-header {
-      background: var(--navy);
-      padding: 16px 24px 0;
-      position: sticky;
-      top: 0;
-      z-index: 200;
-      box-shadow: 0 2px 20px rgba(28,41,81,0.28);
-    }
-    .header-brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .brand-icon {
-      width: 36px; height: 36px;
-      background: var(--orange);
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-    .brand-text { display: flex; flex-direction: column; line-height: 1.15; }
-    .brand-text .t1 { font-size: 18px; font-weight: 700; color: var(--white); }
-    .brand-text .t2 { font-size: 10px; font-weight: 600; color: var(--orange); letter-spacing: 0.14em; text-transform: uppercase; }
-
-    /* Tab bar */
-    .tab-nav { display: flex; gap: 2px; margin-top: 14px; }
-    .tab-btn {
-      padding: 10px 22px;
-      border: none; background: transparent;
-      color: rgba(255,255,255,0.5);
-      font-family: var(--font); font-size: 14px; font-weight: 500;
-      cursor: pointer;
-      border-bottom: 3px solid transparent;
-      border-radius: var(--r-sm) var(--r-sm) 0 0;
-      transition: all .18s;
-    }
-    .tab-btn:hover { color: rgba(255,255,255,0.82); }
-    .tab-btn.active { color: var(--white); border-bottom-color: var(--orange); background: rgba(255,255,255,0.08); }
-
-    /* ===== FILTER BAR ===== */
-    .filter-bar {
-      background: var(--white);
-      padding: 12px 20px;
-      border-bottom: 1px solid var(--gray-100);
-      position: sticky;
-      top: 88px;
-      z-index: 100;
-      box-shadow: 0 2px 10px rgba(28,41,81,0.07);
-    }
-    .filter-row { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
-    .filter-group { display: flex; align-items: center; gap: 7px; }
-    .filter-label { font-size: 12.5px; font-weight: 700; color: var(--navy); white-space: nowrap; display: flex; align-items: center; gap: 4px; }
-
-    .form-control {
-      font-family: var(--font); font-size: 13.5px; color: var(--gray-800);
-      background: var(--gray-50); border: 1.5px solid var(--gray-200);
-      border-radius: var(--r-sm); padding: 6px 11px;
-      transition: border-color .18s; outline: none;
-    }
-    .form-control:focus { border-color: var(--navy); background: var(--white); }
-    select.form-control {
-      padding-right: 26px; appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%231C2951' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-      background-repeat: no-repeat; background-position: right 9px center;
-    }
-    input[type="date"].form-control { min-width: 155px; }
-
-    /* Mode pills */
-    .mode-pills { display: flex; gap: 5px; }
-    .pill-btn {
-      padding: 5px 16px; border-radius: 20px;
-      border: 1.5px solid var(--gray-200);
-      background: var(--white); color: var(--gray-600);
-      font-family: var(--font); font-size: 13px; font-weight: 500;
-      cursor: pointer; transition: all .18s;
-    }
-    .pill-btn:hover { border-color: var(--orange); color: var(--orange); }
-    .pill-btn.active { background: var(--orange); border-color: var(--orange); color: var(--white); font-weight: 700; }
-
-    /* ===== SUMMARY STRIP ===== */
-    .summary-strip {
-      background: var(--navy-20);
-      padding: 7px 20px;
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-      border-bottom: 1px solid var(--gray-200);
-    }
-    .sum-label { font-size: 12.5px; font-weight: 700; color: var(--navy); }
-    .chip {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: var(--white); border: 1.5px solid var(--gray-200);
-      border-radius: 14px; padding: 3px 12px;
-      font-size: 12.5px; font-weight: 500; color: var(--navy);
-    }
-    .chip .num {
-      background: var(--navy); color: var(--white);
-      border-radius: 10px; padding: 0 7px;
-      font-size: 12px; font-weight: 700;
-    }
-    .chip.org .num { background: var(--orange); }
-    .chip.grn .num { background: var(--green); }
-
-    /* ===== STUDENT LIST ===== */
-    .section-body { padding: 14px 18px; }
-    .student-list { display: flex; flex-direction: column; gap: 9px; }
-
-    .student-card {
-      background: var(--white);
-      border: 1.5px solid var(--gray-100);
-      border-radius: var(--r);
-      padding: 13px 15px;
-      display: flex; align-items: flex-start; gap: 13px;
-      box-shadow: var(--sh);
-      transition: box-shadow .18s, border-color .18s;
-      position: relative;
-    }
-    .student-card:hover { box-shadow: var(--sh-md); border-color: var(--gray-200); }
-    .student-card.all-locked { background: var(--locked-bg); }
-
-    /* Avatar */
-    .avatar {
-      width: 42px; height: 42px; border-radius: 50%;
-      background: linear-gradient(135deg,var(--navy) 0%,#2E4B90 100%);
-      color: var(--white);
-      font-size: 16px; font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-
-    /* Card body */
-    .card-body { flex: 1; min-width: 0; }
-    .name-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
-    .s-nickname { font-size: 15.5px; font-weight: 700; color: var(--navy); }
-    .s-fullname { font-size: 13px; color: var(--gray-600); }
-    .tag {
-      display: inline-flex; align-items: center; gap: 2px;
-      padding: 2px 8px; border-radius: 12px;
-      font-size: 11.5px; font-weight: 600;
-    }
-    .tag.dept    { background: rgba(28,41,81,0.1); color: var(--navy); }
-    .tag.period  { background: var(--orange-bg); color: var(--orange); }
-
-    .meta-row { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 5px; }
-    .meta-item {
-      font-size: 12.5px; color: var(--gray-600);
-      display: flex; align-items: center; gap: 3px;
-    }
-    .meta-item.warn  { color: var(--red); font-weight: 600; }
-    .meta-item.soft  { color: var(--gray-400); }
-
-    .warn-banner {
-      margin-top: 6px;
-      background: #FFF7ED; border: 1.5px solid #FDE68A;
-      border-radius: var(--r-sm); padding: 5px 10px;
-      font-size: 12.5px; color: #92400E;
-      display: flex; align-items: center; gap: 5px;
-    }
-    .warn-banner.red { background:#FEF2F2; border-color:#FECACA; color:var(--red); }
-
-    /* Action buttons */
-    .card-actions {
-      display: flex; flex-direction: column;
-      align-items: flex-end; gap: 5px; flex-shrink: 0;
-    }
-    .btn-check {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 7px 13px; border-radius: var(--r-sm);
-      border: none; font-family: var(--font);
-      font-size: 13px; font-weight: 700;
-      cursor: pointer; transition: all .18s;
-      white-space: nowrap;
-    }
-    .btn-check.tutor  { background: var(--navy);   color: var(--white); }
-    .btn-check.online { background: var(--orange);  color: var(--white); }
-    .btn-check.draw   { background: var(--purple);  color: var(--white); }
-    .btn-check:not(:disabled):hover { filter: brightness(1.12); transform: translateY(-1px); }
-    .btn-check:disabled,
-    .btn-check.locked-btn {
-      background: var(--locked-bg);
-      color: var(--locked-col);
-      border: 1.5px solid var(--gray-200);
-      cursor: not-allowed;
-      transform: none; filter: none;
-    }
-
-    /* ===== REPORT TABLE ===== */
-    .report-table-wrap { overflow-x: auto; border-radius: var(--r); box-shadow: var(--sh); }
-    .report-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    .report-table thead tr { background: var(--navy); color: var(--white); }
-    .report-table th { padding: 10px 14px; font-weight: 600; font-size: 13px; text-align: left; white-space: nowrap; }
-    .report-table td { padding: 10px 14px; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
-    .report-table tbody tr:nth-child(even) { background: var(--gray-50); }
-    .report-table tbody tr:hover { background: var(--orange-bg); }
-    .report-table td:first-child { color: var(--gray-400); font-size: 13px; }
-
-    .mode-badge {
-      display: inline-block; padding: 2px 10px; border-radius: 12px;
-      font-size: 12px; font-weight: 700;
-    }
-    .mode-badge.tutor  { background: rgba(28,41,81,0.1); color: var(--navy); }
-    .mode-badge.online { background: var(--orange-bg); color: var(--orange); }
-    .mode-badge.draw   { background: #EDE9FE; color: var(--purple); }
-
-    /* ===== EMPTY / LOADING / TOAST ===== */
-    .empty-state {
-      text-align: center; padding: 52px 24px; color: var(--gray-400);
-    }
-    .empty-state svg { display: block; margin: 0 auto 12px; opacity:.25; }
-    .empty-state p { font-size: 15px; }
-
-    .loading-overlay {
-      position: fixed; inset: 0;
-      background: rgba(28,41,81,0.20);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 9999;
-    }
-    .spinner {
-      width: 46px; height: 46px;
-      border: 4px solid rgba(255,255,255,0.3);
-      border-top-color: var(--orange);
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .toast-wrap {
-      position: fixed; bottom: 22px; right: 22px;
-      display: flex; flex-direction: column; gap: 7px;
-      z-index: 9998;
-    }
-    .toast {
-      background: var(--gray-800); color: var(--white);
-      padding: 11px 17px; border-radius: var(--r);
-      font-size: 13.5px; font-weight: 500;
-      box-shadow: var(--sh-md);
-      animation: toastIn .28s ease;
-      display: flex; align-items: center; gap: 8px;
-      max-width: 310px;
-    }
-    .toast.ok   { background: #14532D; border-left: 4px solid var(--green); }
-    .toast.err  { background: #7F1D1D; border-left: 4px solid var(--red); }
-    .toast.warn { background: #78350F; border-left: 4px solid var(--yellow); }
-    @keyframes toastIn {
-      from { opacity:0; transform: translateY(10px); }
-      to   { opacity:1; transform: translateY(0); }
-    }
-
-    /* ===== RESPONSIVE ===== */
-    @media (max-width: 600px) {
-      .filter-row { flex-direction: column; align-items: flex-start; }
-      .student-card { flex-wrap: wrap; }
-      .card-actions { flex-direction: row; flex-wrap: wrap; width: 100%; justify-content: flex-start; }
-      .tab-btn { padding: 10px 14px; font-size: 13px; }
-      .brand-text .t1 { font-size: 16px; }
-      .section-body { padding: 12px; }
-    }
+    /* Card */
+    .card { background: var(--white); border: 1px solid var(--gray-100); border-radius: 10px; padding: 15px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+    .card.done { opacity: 0.7; background: #f9f9f9; }
+    .student-info h3 { margin: 0 0 5px; color: var(--navy); }
+    .student-info p { margin: 0; font-size: 13px; color: var(--gray-600); }
+    
+    /* Buttons */
+    .btn { padding: 8px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; margin-left: 5px; }
+    .btn-check { background: var(--navy); color: white; }
+    .btn-done { background: var(--green); color: white; cursor: not-allowed; }
+    
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--gray-100); }
+    
+    .loading { text-align: center; padding: 40px; }
   </style>
 </head>
 <body>
-<div class="app-wrapper">
 
-  <!-- ===== HEADER ===== -->
-  <header class="app-header">
-    <div class="header-brand">
-      <div class="brand-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round">
-          <rect x="3" y="4" width="18" height="18" rx="2"/>
-          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-          <line x1="3" y1="10" x2="21" y2="10"/>
-          <line x1="8" y1="14" x2="8" y2="14" stroke-width="3"/>
-          <line x1="12" y1="14" x2="12" y2="14" stroke-width="3"/>
-          <line x1="8" y1="18" x2="8" y2="18" stroke-width="3"/>
-          <line x1="12" y1="18" x2="12" y2="18" stroke-width="3"/>
-        </svg>
-      </div>
-      <div class="brand-text">
-        <span class="t1">ระบบเช็คชื่อ</span>
-        <span class="t2">ARTNOLATE</span>
-      </div>
+<header class="app-header">
+  <h1>ระบบเช็คชื่อ ARTNOLATE</h1>
+  <p>Admin Dashboard</p>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" onclick="switchPage('attendance')">✅ เช็คชื่อ</button>
+  <button class="tab-btn" onclick="switchPage('report')">📋 รายงาน</button>
+</nav>
+
+<div class="container">
+  <div id="page-attendance">
+    <div class="toolbar">
+      <input type="date" id="att-date" class="form-control" onchange="renderAttendance()">
+      <select id="att-dept" class="form-control" onchange="renderAttendance()">
+        <option value="">เลือกภาควิชา</option>
+        <option>ศิลปกรรม</option><option>สถาปัตยกรรม</option><option>นิเทศศิลป์</option>
+      </select>
     </div>
-    <nav class="tab-nav">
-      <button class="tab-btn active" id="tab-checkin" onclick="switchTab('checkin')">
-        ✅&nbsp; เช็คชื่อ
-      </button>
-      <button class="tab-btn" id="tab-report" onclick="switchTab('report')">
-        📋&nbsp; รายงานประจำวัน
-      </button>
-    </nav>
-  </header>
-
-  <!-- ======================================================
-       PAGE: CHECKIN
-  ====================================================== -->
-  <div id="page-checkin">
-
-    <!-- Filter bar -->
-    <div class="filter-bar">
-      <div class="filter-row">
-
-        <!-- วันที่ -->
-        <div class="filter-group">
-          <span class="filter-label">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
-            วันที่
-          </span>
-          <input type="date" id="checkin-date" class="form-control" onchange="onDateChange()" />
-        </div>
-
-        <!-- รูปแบบ -->
-        <div class="filter-group">
-          <span class="filter-label">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            รูปแบบ
-          </span>
-          <div class="mode-pills">
-            <button class="pill-btn active" id="pill-tutor"  onclick="setMode('ติวสด')">ติวสด</button>
-            <button class="pill-btn"        id="pill-online" onclick="setMode('ออนไลน์')">ออนไลน์</button>
-          </div>
-        </div>
-
-        <!-- ภาควิชา -->
-        <div class="filter-group">
-          <span class="filter-label">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            ภาควิชา
-          </span>
-          <select id="filter-dept" class="form-control" onchange="renderList()">
-            <option value="all">ทั้งหมด</option>
-            <option value="ศิลปกรรม">ศิลปกรรม</option>
-            <option value="สถาปัตยกรรม">สถาปัตยกรรม</option>
-            <option value="ภูมิสถาปัตยกรรม">ภูมิสถาปัตยกรรม / สถาปัตยกรรมไทย</option>
-            <option value="สถาปัตยกรรมภายใน">สถาปัตยกรรมภายใน / ออกแบบภายใน</option>
-            <option value="นิเทศศิลป์">นิเทศศิลป์ / ออกแบบการสื่อสาร</option>
-            <option value="ภาพยนตร์">ภาพยนตร์</option>
-            <option value="อนิเมชัน">อนิเมชัน</option>
-            <option value="การถ่ายภาพ">การถ่ายภาพ</option>
-            <option value="ศิลปอุตสาหกรรม">ศิลปอุตสาหกรรม / จิวเวลรี่</option>
-            <option value="แฟชั่น">แฟชั่น</option>
-            <option value="พื้นฐาน">พื้นฐาน</option>
-          </select>
-        </div>
-
-        <!-- ปุ่ม Refresh -->
-        <button class="pill-btn" onclick="loadCheckin()" style="border-color:var(--navy);color:var(--navy)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-2px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-          รีเฟรช
-        </button>
-      </div>
-    </div>
-
-    <!-- Summary strip -->
-    <div class="summary-strip">
-      <span class="sum-label">สรุป</span>
-      <div class="chip">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-        แสดง <span class="num" id="cnt-show">0</span>
-      </div>
-      <div class="chip grn">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        เช็คแล้ว <span class="num" id="cnt-checked">0</span>
-      </div>
-      <div class="chip org" id="chip-pending">
-        รอเช็ค <span class="num" id="cnt-pending">0</span>
-      </div>
-    </div>
-
-    <!-- Student list -->
-    <div class="section-body">
-      <div class="student-list" id="student-list">
-        <div class="empty-state">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-          <p>กำลังโหลดข้อมูล...</p>
-        </div>
-      </div>
-    </div>
+    <div id="att-list"></div>
   </div>
 
-  <!-- ======================================================
-       PAGE: REPORT
-  ====================================================== -->
   <div id="page-report" style="display:none">
-
-    <!-- Filter bar -->
-    <div class="filter-bar">
-      <div class="filter-row">
-        <div class="filter-group">
-          <span class="filter-label">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
-            วันที่
-          </span>
-          <input type="date" id="report-date" class="form-control" onchange="loadReport()" />
-        </div>
-        <button class="pill-btn" onclick="loadReport()" style="border-color:var(--navy);color:var(--navy)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-2px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-          โหลดใหม่
-        </button>
-      </div>
-    </div>
-
-    <!-- Summary strip -->
-    <div class="summary-strip">
-      <span class="sum-label">รายงาน</span>
-      <div class="chip">รวม <span class="num" id="r-total">0</span></div>
-      <div class="chip">ติวสด <span class="num" id="r-tutor">0</span></div>
-      <div class="chip org">ออนไลน์ <span class="num" id="r-online">0</span></div>
-    </div>
-
-    <!-- Table -->
-    <div class="section-body">
-      <div class="report-table-wrap">
-        <table class="report-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>ชื่อเล่น</th>
-              <th>โรงเรียน</th>
-              <th>ภาควิชา</th>
-              <th>รูปแบบ</th>
-            </tr>
-          </thead>
-          <tbody id="report-body"></tbody>
-        </table>
-      </div>
-      <div id="report-empty" class="empty-state" style="display:none">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-        <p>ไม่มีรายชื่อในวันที่เลือก</p>
-      </div>
-    </div>
+    <input type="date" id="rep-date" class="form-control" onchange="renderReport()" style="margin-bottom:20px">
+    <div id="rep-content"></div>
   </div>
-
-</div><!-- /app-wrapper -->
-
-<!-- Loading overlay -->
-<div class="loading-overlay" id="loading" style="display:none">
-  <div class="spinner"></div>
 </div>
 
-<!-- Toast -->
-<div class="toast-wrap" id="toast-wrap"></div>
-
-<!-- ======================================================
-     JAVASCRIPT
-====================================================== -->
 <script>
-// ============================================================
-// STATE
-// ============================================================
-let allStudents = [];
-let checkedMap  = {};   // { "0812345678": ["ติวสด", "วิชาภาค", ...] }
-let currentMode = 'ติวสด';
-let currentDate = '';
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbyftmXqCv2YbMtPLyHR1ANdJaZ4zTCyNDDrY5shpg_AvwM_ZY7diIM__-a1m7a0xNig/exec';
+  let students = [];
 
-// ============================================================
-// DEPT matching — ตรงกับชื่อย่อที่อาจอยู่ใน Sheet
-// ============================================================
-const DEPT_KEYS = {
-  'ศิลปกรรม':          ['ศิลปกรรม'],
-  'สถาปัตยกรรม':       ['สถาปัตยกรรม'],
-  'ภูมิสถาปัตยกรรม':   ['ภูมิสถาปัตยกรรม','สถาปัตยกรรมไทย'],
-  'สถาปัตยกรรมภายใน':  ['สถาปัตยกรรมภายใน','ออกแบบภายใน'],
-  'นิเทศศิลป์':        ['นิเทศศิลป์','ออกแบบการสื่อสาร'],
-  'ภาพยนตร์':          ['ภาพยนตร์'],
-  'อนิเมชัน':          ['อนิเมชัน'],
-  'การถ่ายภาพ':        ['การถ่ายภาพ'],
-  'ศิลปอุตสาหกรรม':    ['ศิลปอุตสาหกรรม','จิวเวลรี่'],
-  'แฟชั่น':            ['แฟชั่น'],
-  'พื้นฐาน':           ['พื้นฐาน'],
-};
+  // Function: Switch Pages
+  function switchPage(page) {
+    document.getElementById('page-attendance').style.display = page === 'attendance' ? 'block' : 'none';
+    document.getElementById('page-report').style.display = page === 'report' ? 'block' : 'none';
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.textContent.includes(page === 'attendance' ? 'เช็คชื่อ' : 'รายงาน')));
+  }
 
-// ============================================================
-// GAS BRIDGE — เรียกฟังก์ชันใน Code.gs
-// ============================================================
-// แก้ไขฟังก์ชัน callGAS ใหม่ในไฟล์ HTML ของคุณ
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwy0jjqNph0MGvyUfcmtydSU2N2AfxZWZw23gPIGq5bK2KCTBWkzzJNpHFoY8JUukXL/exec';
+  // Fetch Data
+  async function fetchData() {
+    const res = await fetch(`${GAS_URL}?action=getStudents`);
+    const data = await res.json();
+    students = data.students || [];
+    renderAttendance();
+  }
 
-async function callGAS(fn, ...args) {
-  const url = new URL(GAS_URL);
-  
-  if (fn === 'saveAttendance') {
-    // สำหรับการบันทึก ต้องใช้ POST
-    const response = await fetch(GAS_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'saveAttendance', data: args[0] })
-    });
-    return await response.json();
-  } else {
-    // สำหรับการดึงข้อมูล ใช้ GET (เพิ่ม action ลงใน URL)
-    url.searchParams.append('action', fn);
-    if (args[0]) url.searchParams.append('dateStr', args[0]);
+  function renderAttendance() {
+    const list = document.getElementById('att-list');
+    list.innerHTML = students.map(s => `
+      <div class="card" id="s-${s.phone}">
+        <div class="student-info">
+          <h3>${s.nickname} <span style="font-size:12px;color:gray">${s.fullname}</span></h3>
+          <p>โรงเรียน: ${s.school} | ภาควิชา: ${s.dept}</p>
+        </div>
+        <button class="btn btn-check" onclick="doCheck(this, '${s.phone}', '${s.nickname}', '${s.school}', '${s.dept}')">เช็คชื่อ</button>
+      </div>
+    `).join('');
+  }
+
+  async function doCheck(btn, phone, nickname, school, dept) {
+    btn.textContent = "กำลังบันทึก...";
+    const date = document.getElementById('att-date').value;
     
-    const response = await fetch(url, { method: 'GET' });
-    return await response.json();
-  }
-}
-
-
-// ============================================================
-// INIT
-// ============================================================
-document.addEventListener('DOMContentLoaded', () => {
-  const today = todayStr();
-  currentDate = today;
-  document.getElementById('checkin-date').value = today;
-  document.getElementById('report-date').value  = today;
-  loadCheckin();
-});
-
-function todayStr() {
-  const d = new Date();
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-}
-const pad = n => String(n).padStart(2,'0');
-
-// ============================================================
-// TAB SWITCH
-// ============================================================
-function switchTab(tab) {
-  document.getElementById('page-checkin').style.display = tab==='checkin' ? '' : 'none';
-  document.getElementById('page-report').style.display  = tab==='report'  ? '' : 'none';
-  document.getElementById('tab-checkin').classList.toggle('active', tab==='checkin');
-  document.getElementById('tab-report').classList.toggle('active',  tab==='report');
-  if (tab === 'report') loadReport();
-}
-
-// ============================================================
-// LOAD CHECKIN
-// ============================================================
-async function loadCheckin() {
-  showLoad(true);
-  try {
-    const [sRes, aRes] = await Promise.all([
-      callGAS('getStudents'),
-      callGAS('getAttendanceToday', currentDate)
-    ]);
-    if (!sRes.success) throw new Error(sRes.error);
-    if (!aRes.success) throw new Error(aRes.error);
-    allStudents = sRes.data;
-    checkedMap  = aRes.checkedPhones || {};
-    renderList();
-  } catch(e) {
-    toast('โหลดข้อมูลไม่สำเร็จ: ' + e.message, 'err');
-    document.getElementById('student-list').innerHTML =
-      `<div class="empty-state"><p>❌ ${esc(e.message)}</p></div>`;
-  } finally {
-    showLoad(false);
-  }
-}
-
-// ============================================================
-// DATE & MODE CHANGE
-// ============================================================
-function onDateChange() {
-  currentDate = document.getElementById('checkin-date').value;
-  showLoad(true);
-  callGAS('getAttendanceToday', currentDate)
-    .then(res => {
-      checkedMap = (res && res.success) ? (res.checkedPhones||{}) : {};
-      renderList();
-    })
-    .catch(e => toast('โหลดสถานะไม่สำเร็จ: '+e.message,'err'))
-    .finally(()=>showLoad(false));
-}
-
-function setMode(mode) {
-  currentMode = mode;
-  document.getElementById('pill-tutor').classList.toggle('active',  mode==='ติวสด');
-  document.getElementById('pill-online').classList.toggle('active', mode==='ออนไลน์');
-  renderList();
-}
-
-// ============================================================
-// FILTER HELPERS
-// ============================================================
-function matchMode(s, mode) {
-  const c = s.course.toLowerCase();
-  if (mode === 'ติวสด')
-    return c.includes('เหมา') || c.includes('mix') || (c.includes('ติวสด') && !c.includes('ออนไลน์'));
-  // ออนไลน์
-  return c.includes('ออนไลน์') || c.includes('mix') || c.includes('เหมา');
-}
-
-function matchDept(studentDept, sel) {
-  if (sel === 'all') return true;
-  const d = studentDept.toLowerCase();
-  return (DEPT_KEYS[sel] || [sel]).some(k => d.includes(k.toLowerCase()));
-}
-
-// ============================================================
-// RENDER STUDENT LIST
-// ============================================================
-function renderList() {
-  const dept = document.getElementById('filter-dept').value;
-  const list = document.getElementById('student-list');
-
-  const filtered = allStudents.filter(s => matchMode(s, currentMode) && matchDept(s.dept, dept));
-
-  // ตรวจว่า locked คือ ทุกปุ่มของโหมดปัจจุบันถูกกดแล้ว
-  let checkedCnt = 0;
-  filtered.forEach(s => {
-    const done = checkedMap[s.phone] || [];
-    const relevant = s.buttons.filter(b => btnMatchesMode(b, currentMode));
-    if (relevant.length > 0 && relevant.every(b => done.includes(b))) checkedCnt++;
-  });
-
-  document.getElementById('cnt-show').textContent    = filtered.length;
-  document.getElementById('cnt-checked').textContent = checkedCnt;
-  document.getElementById('cnt-pending').textContent = filtered.length - checkedCnt;
-
-  if (filtered.length === 0) {
-    list.innerHTML = `
-      <div class="empty-state">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-        <p>ไม่มีนักเรียนที่ตรงกับตัวกรองที่เลือก</p>
-      </div>`;
-    return;
-  }
-  list.innerHTML = filtered.map(buildCard).join('');
-}
-
-// ปุ่มนี้เกี่ยวข้องกับโหมดปัจจุบันไหม
-function btnMatchesMode(btn, mode) {
-  if (mode === 'ติวสด')  return btn === 'ติวสด';
-  return btn === 'วิชาภาค' || btn === 'วาดเส้น';
-}
-
-// ============================================================
-// BUILD STUDENT CARD
-// ============================================================
-function buildCard(s) {
-  const letter   = s.nickname ? s.nickname[0] : '?';
-  const done     = checkedMap[s.phone] || [];
-
-  // แสดงเฉพาะปุ่มที่เกี่ยวข้องกับโหมดที่เลือก
-  const visibleBtns = s.buttons.filter(b => btnMatchesMode(b, currentMode));
-  const allLocked   = visibleBtns.length > 0 && visibleBtns.every(b => done.includes(b));
-
-  const btnHtml = visibleBtns.map(btn => {
-    const locked = done.includes(btn);
-    if (locked) {
-      return `<button class="btn-check locked-btn" disabled>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        ${btn}
-      </button>`;
-    }
-    const cls = btn==='ติวสด' ? 'tutor' : (btn==='วาดเส้น' ? 'draw' : 'online');
-    const sid = encodeURIComponent(JSON.stringify(s));
-    return `<button class="btn-check ${cls}" onclick="doCheckIn(this,'${sid}','${btn}')">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-      ${btn}
-    </button>`;
-  }).join('');
-
-  // แถบเตือน
-  let warns = '';
-  if (s.warnRemaining) warns += `<div class="warn-banner red">⚠️ ครั้งเรียนเหลือน้อย (${esc(s.remaining)} ครั้ง) — ควรต่ออายุ</div>`;
-  if (s.warnExpire)    warns += `<div class="warn-banner">⏰ คอร์สใกล้หมดอายุ ${esc(s.expire)}</div>`;
-
-  const deptTag   = s.dept   ? `<span class="tag dept">${esc(s.dept)}</span>` : '';
-  const periodTag = s.period ? `<span class="tag period">รอบ ${esc(s.period)}</span>` : '';
-
-  const remainMeta = s.remaining
-    ? `<span class="meta-item${s.warnRemaining?' warn':''}">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        เหลือ ${esc(s.remaining)} ครั้ง</span>` : '';
-
-  const expireMeta = s.expire
-    ? `<span class="meta-item${s.warnExpire?' warn':''}">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        ${esc(s.expire)}</span>` : '';
-
-  const courseMeta = `<span class="meta-item soft">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
-    ${esc(s.course)}</span>`;
-
-  return `
-  <div class="student-card${allLocked?' all-locked':''}">
-    <div class="avatar">${esc(letter)}</div>
-    <div class="card-body">
-      <div class="name-row">
-        <span class="s-nickname">${esc(s.nickname)}</span>
-        <span class="s-fullname">${esc(s.fullname)}</span>
-        ${deptTag}${periodTag}
-      </div>
-      <div class="meta-row">
-        <span class="meta-item">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          ${esc(s.school)}</span>
-        ${remainMeta}${expireMeta}${courseMeta}
-      </div>
-      ${warns}
-    </div>
-    <div class="card-actions">${btnHtml || '<span style="font-size:12px;color:var(--gray-400)">ไม่มีปุ่ม</span>'}</div>
-  </div>`;
-}
-
-// ============================================================
-// CHECK IN
-// ============================================================
-// ในไฟล์ HTML ของคุณ
-// ในไฟล์ HTML ของคุณ
-async function doCheckIn(btn, sid, mode) {
-  let s = JSON.parse(decodeURIComponent(sid));
-  showLoad(true);
-
-  // สำคัญมาก: ใส่ URL จริงที่ลงท้ายด้วย /exec
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbwy0jjqNph0MGvyUfcmtydSU2N2AfxZWZw23gPIGq5bK2KCTBWkzzJNpHFoY8JUukXL/exec';
-
-  try {
-    const response = await fetch(GAS_URL, {
+    await fetch(GAS_URL, {
       method: 'POST',
-      body: JSON.stringify({
-        action: 'saveAttendance',
-        data: {
-          dateStr: currentDate,
-          nickname: s.nickname,
-          school: s.school,
-          phone: s.phone,
-          dept: s.dept,
-          period: s.period,
-          mode: mode
-        }
-      })
+      body: JSON.stringify({ action: 'addLog', date, phone, nickname, school, dept, type: 'ติวสด' })
     });
     
-    const res = await response.json();
-    if (res.success) {
-      toast(`✅ เช็คชื่อ ${s.nickname} สำเร็จ`, 'ok');
-      // อัปเดต state และ render ใหม่
-      if (!checkedMap[s.phone]) checkedMap[s.phone] = [];
-      checkedMap[s.phone].push(mode);
-      renderList();
-    } else {
-      throw new Error(res.error);
-    }
-  } catch(e) {
-    toast('บันทึกไม่สำเร็จ: ' + e.message, 'err');
-    btn.disabled = false;
-    btn.classList.remove('locked-btn');
-  } finally {
-    showLoad(false);
+    btn.className = "btn btn-done";
+    btn.textContent = "✓ เช็คแล้ว";
   }
-}
-// ============================================================
-// REPORT PAGE
-// ============================================================
-async function loadReport() {
-  const dateStr = document.getElementById('report-date').value;
-  showLoad(true);
-  try {
-    const res = await callGAS('getAttendanceLog', dateStr);
-    if (!res || !res.success) throw new Error(res ? res.error : 'โหลดไม่สำเร็จ');
 
-    document.getElementById('r-total').textContent  = res.data.length;
-    document.getElementById('r-tutor').textContent  = res.countTutor  || 0;
-    document.getElementById('r-online').textContent = res.countOnline || 0;
-
-    const tbody = document.getElementById('report-body');
-    const empty = document.getElementById('report-empty');
-
-    if (res.data.length === 0) {
-      tbody.innerHTML      = '';
-      empty.style.display  = '';
-      return;
-    }
-    empty.style.display = 'none';
-    tbody.innerHTML = res.data.map(r => {
-      const mc = r.mode==='ติวสด' ? 'tutor' : (r.mode==='วาดเส้น' ? 'draw' : 'online');
-      return `<tr>
-        <td>${r.no}</td>
-        <td><strong>${esc(r.nickname)}</strong></td>
-        <td>${esc(r.school)}</td>
-        <td>${esc(r.dept)}</td>
-        <td><span class="mode-badge ${mc}">${esc(r.mode)}</span></td>
-      </tr>`;
-    }).join('');
-  } catch(e) {
-    toast('โหลดรายงานไม่สำเร็จ: '+e.message,'err');
-  } finally {
-    showLoad(false);
-  }
-}
-
-// ============================================================
-// UTILITIES
-// ============================================================
-function showLoad(v) { document.getElementById('loading').style.display = v ? '' : 'none'; }
-
-function toast(msg, type='ok') {
-  const wrap = document.getElementById('toast-wrap');
-  const el   = document.createElement('div');
-  el.className = `toast ${type}`;
-  el.textContent = msg;
-  wrap.appendChild(el);
-  setTimeout(() => el.remove(), 3800);
-}
-
-function esc(s) {
-  return String(s||'')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+  window.onload = fetchData;
 </script>
+
 </body>
 </html>
