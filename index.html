@@ -745,37 +745,49 @@ function buildCard(s) {
 // CHECK IN
 // ============================================================
 // ในไฟล์ HTML ของคุณ
+// ในไฟล์ HTML ของคุณ
 async function doCheckIn(btn, sid, mode) {
   let s = JSON.parse(decodeURIComponent(sid));
   showLoad(true);
 
+  // สำคัญมาก: ใส่ URL จริงที่ลงท้ายด้วย /exec
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbwy0jjqNph0MGvyUfcmtydSU2N2AfxZWZw23gPIGq5bK2KCTBWkzzJNpHFoY8JUukXL/exec';
+
   try {
-    // ส่งข้อมูลตามโครงสร้าง 7 คอลัมน์ที่ backend ต้องการ
-    const res = await callGAS('addLog', {
-      date: currentDate,
-      nickname: s.nickname,
-      school: s.school,
-      phone: s.phone,
-      dept: s.dept,
-      round: s.round,      // ตามโค้ด backend (เดิมอาจเป็น period)
-      type: mode
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'saveAttendance',
+        data: {
+          dateStr: currentDate,
+          nickname: s.nickname,
+          school: s.school,
+          phone: s.phone,
+          dept: s.dept,
+          period: s.period,
+          mode: mode
+        }
+      })
     });
     
+    const res = await response.json();
     if (res.success) {
-      toast(`✅ บันทึกของ ${s.nickname} เรียบร้อยแล้ว`, 'ok');
-      // อัปเดตตารางรายงานหรือรีเฟรชหน้าจอ
-      loadReport(); 
+      toast(`✅ เช็คชื่อ ${s.nickname} สำเร็จ`, 'ok');
+      // อัปเดต state และ render ใหม่
+      if (!checkedMap[s.phone]) checkedMap[s.phone] = [];
+      checkedMap[s.phone].push(mode);
       renderList();
     } else {
-      throw new Error(res.error || 'บันทึกไม่สำเร็จ');
+      throw new Error(res.error);
     }
   } catch(e) {
     toast('บันทึกไม่สำเร็จ: ' + e.message, 'err');
+    btn.disabled = false;
+    btn.classList.remove('locked-btn');
   } finally {
     showLoad(false);
   }
 }
-
 // ============================================================
 // REPORT PAGE
 // ============================================================
