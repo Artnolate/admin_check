@@ -1,648 +1,1059 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>ระบบเช็คชื่อ — ARTNOLATE</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-<style>
-/* ── Tokens ─────────────────────────────── */
-:root{
-  --bg:#F7F8FA; --surface:#fff; --border:#E4E7ED; --border-light:#EEF0F4;
-  --txt:#1A1D23; --txt2:#6B7280; --txt3:#9CA3AF;
-  --accent:#3D5AFE; --accent-l:#EEF1FF;
-  --green:#10B981; --green-l:#D1FAE5;
-  --orange:#F59E0B; --orange-l:#FEF3C7;
-  --red:#EF4444; --red-l:#FEE2E2;
-  --grey:#9CA3AF; --grey-l:#F3F4F6;
-  --r:10px; --rs:6px;
-  --sh:0 1px 3px rgba(0,0,0,.07);
-  --shm:0 4px 12px rgba(0,0,0,.09);
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--txt);font-size:15px;line-height:1.6;min-height:100vh}
-button{cursor:pointer;font-family:inherit}
-input,select{font-family:inherit}
-a{color:var(--accent)}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ระบบเช็คชื่อ - ARTNOLATE</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ============================================================
+       RESET & BASE
+    ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Header ─────────────────────────────── */
-.hdr{
-  background:var(--surface);border-bottom:1px solid var(--border);
-  padding:0 20px;display:flex;align-items:center;justify-content:space-between;
-  height:58px;position:sticky;top:0;z-index:100;box-shadow:var(--sh);
-}
-.brand{display:flex;flex-direction:column;line-height:1.15}
-.brand-title{font-size:17px;font-weight:700;letter-spacing:-.3px}
-.brand-sub{font-size:10.5px;font-weight:600;color:var(--accent);letter-spacing:.1em;text-transform:uppercase}
-.sync-info{font-size:12px;color:var(--txt3);display:flex;align-items:center;gap:6px}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--grey);flex-shrink:0;transition:background .3s}
-.dot.ok{background:var(--green)}
-.dot.err{background:var(--red)}
-.dot.loading{background:var(--orange);animation:pulse 1s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    :root {
+      --navy:    #1C2951;
+      --navy-90: #1C2951e6;
+      --navy-20: #1C295133;
+      --orange:  #FF8C00;
+      --orange-light: #FFA533;
+      --orange-bg:    #FFF4E0;
+      --white:   #FFFFFF;
+      --gray-50: #F8F9FB;
+      --gray-100:#EEF0F5;
+      --gray-200:#D8DCE8;
+      --gray-400:#9099B0;
+      --gray-600:#5A6278;
+      --gray-800:#2D3448;
+      --green:   #22C55E;
+      --red:     #EF4444;
+      --yellow:  #F59E0B;
+      --locked:  #B0B7C8;
+      --font:    'Sarabun', sans-serif;
+      --radius:  10px;
+      --radius-sm: 6px;
+      --shadow:  0 2px 12px rgba(28,41,81,0.10);
+      --shadow-md: 0 4px 20px rgba(28,41,81,0.14);
+    }
 
-/* ── Tabs ────────────────────────────────── */
-.tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 20px;gap:2px}
-.tab{padding:11px 16px;border:none;background:none;font-size:14px;font-weight:500;color:var(--txt2);
-  border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:6px;transition:color .15s,border-color .15s}
-.tab:hover{color:var(--txt)}
-.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+    body {
+      font-family: var(--font);
+      background: var(--gray-50);
+      color: var(--gray-800);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
 
-/* ── Pages ───────────────────────────────── */
-.page{display:none;padding:20px;max-width:980px;margin:0 auto}
-.page.active{display:block}
+    /* ============================================================
+       LAYOUT
+    ============================================================ */
+    .app-wrapper { max-width: 900px; margin: 0 auto; padding: 0 0 60px; }
 
-/* ── Toolbar ─────────────────────────────── */
-.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
-.lbl{font-size:13px;color:var(--txt2);font-weight:500;white-space:nowrap}
-.field{display:flex;align-items:center;gap:7px}
-.field input[type=date],.field select{
-  padding:7px 11px;border:1px solid var(--border);border-radius:var(--rs);
-  background:var(--surface);font-size:14px;color:var(--txt);outline:none;transition:border-color .15s}
-.field input[type=date]:focus,.field select:focus{border-color:var(--accent)}
-.sep{width:1px;height:26px;background:var(--border)}
-.search-wrap{position:relative;flex:1;min-width:170px}
-.search-wrap input{
-  width:100%;padding:7px 11px 7px 32px;border:1px solid var(--border);
-  border-radius:var(--rs);font-size:14px;background:var(--surface);outline:none;transition:border-color .15s}
-.search-wrap input:focus{border-color:var(--accent)}
-.search-ico{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--txt3)}
+    /* ============================================================
+       STICKY HEADER
+    ============================================================ */
+    .app-header {
+      background: var(--navy);
+      padding: 18px 24px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 16px rgba(28,41,81,0.22);
+    }
 
-/* ── Summary chips ───────────────────────── */
-.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-.chip{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;border:1px solid transparent}
-.chip-b{background:var(--accent-l);color:var(--accent);border-color:#C7D0FF}
-.chip-g{background:var(--green-l);color:#065F46;border-color:#A7F3D0}
-.chip-gr{background:var(--grey-l);color:var(--txt2);border-color:var(--border)}
+    .header-brand {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
 
-/* ── Student Card ────────────────────────── */
-.list{display:flex;flex-direction:column;gap:8px}
-.card{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:var(--r);padding:13px 15px;box-shadow:var(--sh);
-  transition:box-shadow .15s,opacity .2s;
-}
-.card:hover{box-shadow:var(--shm)}
-.card.done{opacity:.6;background:var(--grey-l)}
-.card-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.card-info{flex:1;min-width:0}
-.name-row{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
-.nickname{font-size:16px;font-weight:700}
-.fullname{font-size:13.5px;color:var(--txt2)}
-.meta{display:flex;flex-wrap:wrap;gap:5px 14px;margin-top:6px;font-size:13px;color:var(--txt2)}
-.mi{display:flex;align-items:center;gap:3px}
-.mi-ico{font-size:12px}
-.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600}
-.badge-c{background:var(--accent-l);color:var(--accent)}
-.alerts{display:flex;flex-direction:column;gap:3px;margin-top:7px}
-.alert{display:flex;align-items:center;gap:5px;padding:4px 9px;border-radius:var(--rs);font-size:12px;font-weight:500}
-.alert-w{background:var(--orange-l);color:#92400E}
-.alert-d{background:var(--red-l);color:#991B1B}
+    .header-brand .title-main {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: 0.01em;
+    }
 
-/* ── Check Buttons ───────────────────────── */
-.btns{display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0}
-.cbtn{
-  display:flex;align-items:center;gap:5px;padding:7px 13px;
-  border-radius:var(--rs);border:1.5px solid var(--border);
-  background:var(--surface);color:var(--txt);font-size:13px;font-weight:600;
-  transition:all .15s;white-space:nowrap;min-width:108px;justify-content:center}
-.cbtn:hover:not(:disabled){border-color:var(--accent);color:var(--accent);background:var(--accent-l)}
-.cbtn.saving{opacity:.6;pointer-events:none}
-.cbtn.done{background:var(--green);border-color:var(--green);color:#fff;pointer-events:none}
-.cbtn.locked{background:var(--grey-l);border-color:var(--border);color:var(--grey);pointer-events:none}
+    .header-brand .title-sub {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--orange);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
 
-/* ── States ──────────────────────────────── */
-.state{display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:56px 20px;color:var(--txt3);text-align:center;gap:9px}
-.state-ico{font-size:34px}
-.state p{font-size:14px}
-.spinner{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--accent);
-  border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+    /* Tab Navigation */
+    .tab-nav {
+      display: flex;
+      gap: 4px;
+      margin-top: 14px;
+    }
 
-/* ── Report Table ────────────────────────── */
-.rtable{width:100%;border-collapse:collapse;background:var(--surface);
-  border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);font-size:14px}
-.rtable thead{background:var(--bg)}
-.rtable th{padding:10px 13px;text-align:left;font-size:11.5px;font-weight:600;
-  color:var(--txt2);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)}
-.rtable td{padding:10px 13px;border-bottom:1px solid var(--border-light);vertical-align:middle}
-.rtable tr:last-child td{border-bottom:none}
-.rtable tr:hover td{background:var(--bg)}
-.num{color:var(--txt3);font-size:12px;font-weight:600;width:34px}
-.pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600}
-.pill-live{background:var(--accent-l);color:var(--accent)}
-.pill-draw{background:var(--orange-l);color:#92400E}
-.pill-online{background:var(--green-l);color:#065F46}
+    .tab-btn {
+      padding: 10px 22px;
+      border: none;
+      background: transparent;
+      color: rgba(255,255,255,0.55);
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    }
 
-/* ── Toast ───────────────────────────────── */
-#toast{
-  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);
-  background:#1A1D23;color:#fff;padding:9px 20px;border-radius:8px;
-  font-size:14px;font-weight:500;opacity:0;transition:opacity .25s,transform .25s;
-  pointer-events:none;z-index:999;white-space:nowrap;max-width:90vw;text-align:center}
-#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-#toast.ok{background:var(--green)}
-#toast.err{background:var(--red)}
+    .tab-btn:hover { color: rgba(255,255,255,0.85); }
 
-/* ── Responsive ──────────────────────────── */
-@media(max-width:580px){
-  .page{padding:12px}
-  .toolbar{flex-direction:column;align-items:stretch}
-  .field{flex-wrap:wrap}
-  .card-row{flex-direction:column}
-  .btns{flex-direction:row;flex-wrap:wrap;align-items:flex-start}
-}
-</style>
+    .tab-btn.active {
+      color: var(--white);
+      border-bottom-color: var(--orange);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .tab-btn .tab-icon { margin-right: 6px; }
+
+    /* ============================================================
+       FILTER BAR (sticky below header)
+    ============================================================ */
+    .filter-bar {
+      background: var(--white);
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--gray-100);
+      position: sticky;
+      top: 90px;
+      z-index: 90;
+      box-shadow: 0 2px 8px rgba(28,41,81,0.07);
+    }
+
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .filter-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--navy);
+      white-space: nowrap;
+    }
+
+    .filter-label svg { vertical-align: -2px; margin-right: 4px; }
+
+    .form-control {
+      font-family: var(--font);
+      font-size: 14px;
+      color: var(--gray-800);
+      background: var(--gray-50);
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      padding: 7px 12px;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    .form-control:focus { border-color: var(--navy); }
+
+    select.form-control { padding-right: 28px; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231C2951' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
+
+    input[type="date"].form-control { min-width: 160px; }
+
+    /* Mode toggle pills */
+    .mode-pills { display: flex; gap: 6px; }
+
+    .pill-btn {
+      padding: 6px 18px;
+      border-radius: 20px;
+      border: 1.5px solid var(--gray-200);
+      background: var(--white);
+      color: var(--gray-600);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+
+    .pill-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+    .pill-btn.active {
+      background: var(--orange);
+      border-color: var(--orange);
+      color: var(--white);
+      font-weight: 600;
+    }
+
+    /* Summary strip */
+    .summary-strip {
+      display: flex;
+      gap: 10px;
+      padding: 8px 20px;
+      background: var(--navy-20);
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .summary-chip {
+      background: var(--white);
+      border: 1.5px solid var(--gray-200);
+      border-radius: 16px;
+      padding: 4px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--navy);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .summary-chip .chip-count {
+      background: var(--navy);
+      color: var(--white);
+      border-radius: 10px;
+      padding: 0 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .summary-chip.orange .chip-count { background: var(--orange); }
+
+    /* ============================================================
+       STUDENT LIST
+    ============================================================ */
+    .section-content { padding: 16px 20px; }
+
+    .student-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .student-card {
+      background: var(--white);
+      border: 1.5px solid var(--gray-100);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      box-shadow: var(--shadow);
+      transition: box-shadow 0.2s, border-color 0.2s;
+      position: relative;
+    }
+
+    .student-card:hover { box-shadow: var(--shadow-md); border-color: var(--gray-200); }
+
+    .student-card.locked {
+      background: var(--gray-50);
+      border-color: var(--gray-100);
+      opacity: 0.72;
+    }
+
+    /* Avatar */
+    .student-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--navy) 0%, #2E4A8A 100%);
+      color: var(--white);
+      font-size: 17px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* Card body */
+    .student-body { flex: 1; min-width: 0; }
+
+    .student-name-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .student-nickname {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .student-fullname {
+      font-size: 13px;
+      color: var(--gray-600);
+    }
+
+    .student-meta {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 5px;
+    }
+
+    .meta-item {
+      font-size: 12.5px;
+      color: var(--gray-600);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .meta-item svg { flex-shrink: 0; }
+
+    .meta-item.warn { color: var(--red); font-weight: 600; }
+
+    /* Tags */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11.5px;
+      font-weight: 600;
+      background: var(--gray-100);
+      color: var(--gray-600);
+    }
+
+    .tag.dept { background: var(--navy-20); color: var(--navy); }
+    .tag.warn-tag { background: #FEE2E2; color: var(--red); }
+    .tag.ok-tag   { background: #DCFCE7; color: #15803D; }
+
+    /* Buttons area */
+    .student-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .btn-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.18s;
+    }
+
+    .btn-check.tutor  { background: var(--navy); color: var(--white); }
+    .btn-check.online { background: var(--orange); color: var(--white); }
+    .btn-check.watsen { background: #7C3AED; color: var(--white); }
+
+    .btn-check:hover { filter: brightness(1.12); transform: translateY(-1px); }
+
+    .btn-check.locked-btn {
+      background: var(--locked);
+      color: var(--white);
+      cursor: not-allowed;
+      transform: none;
+      filter: none;
+    }
+
+    .lock-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--locked);
+      font-weight: 500;
+    }
+
+    /* ============================================================
+       REPORT PAGE
+    ============================================================ */
+    .report-table-wrap { overflow-x: auto; margin-top: 8px; }
+
+    .report-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .report-table thead tr {
+      background: var(--navy);
+      color: var(--white);
+    }
+
+    .report-table th {
+      padding: 10px 14px;
+      font-weight: 600;
+      font-size: 13px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .report-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--gray-100);
+      vertical-align: middle;
+    }
+
+    .report-table tbody tr:nth-child(even) { background: var(--gray-50); }
+    .report-table tbody tr:hover { background: var(--orange-bg); }
+
+    .mode-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .mode-badge.tutor  { background: var(--navy-20); color: var(--navy); }
+    .mode-badge.online { background: var(--orange-bg); color: var(--orange); }
+    .mode-badge.watsen { background: #EDE9FE; color: #7C3AED; }
+
+    /* ============================================================
+       EMPTY / LOADING / TOAST
+    ============================================================ */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--gray-400);
+    }
+
+    .empty-state svg { opacity: 0.3; margin-bottom: 12px; }
+    .empty-state p { font-size: 15px; }
+
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(28,41,81,0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+
+    .spinner {
+      width: 44px; height: 44px;
+      border: 4px solid var(--gray-200);
+      border-top-color: var(--orange);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 9999;
+    }
+
+    .toast {
+      background: var(--gray-800);
+      color: var(--white);
+      padding: 12px 18px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      animation: slideUp 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 320px;
+    }
+
+    .toast.success { background: #166534; border-left: 4px solid var(--green); }
+    .toast.error   { background: #7F1D1D; border-left: 4px solid var(--red); }
+    .toast.warn    { background: #78350F; border-left: 4px solid var(--yellow); }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Warn banner */
+    .warn-banner {
+      background: #FFF7ED;
+      border: 1.5px solid #FED7AA;
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      font-size: 12.5px;
+      color: #92400E;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ============================================================
+       RESPONSIVE
+    ============================================================ */
+    @media (max-width: 640px) {
+      .filter-row { flex-direction: column; align-items: flex-start; }
+      .student-card { flex-direction: column; }
+      .student-actions { flex-direction: row; align-items: flex-start; flex-wrap: wrap; }
+      .tab-btn { padding: 10px 14px; font-size: 13px; }
+      .header-brand .title-main { font-size: 18px; }
+    }
+  </style>
 </head>
 <body>
 
-<header class="hdr">
-  <div class="brand">
-    <span class="brand-title">📋 ระบบเช็คชื่อ</span>
-    <span class="brand-sub">ARTNOLATE</span>
-  </div>
-  <div class="sync-info">
-    <div class="dot" id="sync-dot"></div>
-    <span id="sync-label">ยังไม่ได้โหลด</span>
-  </div>
-</header>
+<!-- ============================================================
+     APP SHELL
+============================================================ -->
+<div class="app-wrapper">
 
-<nav class="tabs">
-  <button class="tab active" onclick="goTab('attendance',this)">
-    ✅ เช็คชื่อ
-  </button>
-  <button class="tab" onclick="goTab('report',this)">
-    📊 รายงานประจำวัน
-  </button>
-</nav>
-
-<div class="page active" id="page-attendance">
-
-  <div class="toolbar">
-    <div class="field">
-      <span class="lbl">📅 วันที่</span>
-      <input type="date" id="att-date" onchange="renderAttendance()"/>
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="header-brand">
+      <!-- Calendar icon -->
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF8C00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+      <span class="title-main">ระบบเช็คชื่อ</span>
+      <span class="title-sub">ARTNOLATE</span>
     </div>
-    <div class="sep"></div>
-    <div class="field">
-      <span class="lbl">🎓 ภาควิชา</span>
-      <select id="att-dept" onchange="renderAttendance()">
-        <option value="">— เลือกภาควิชา —</option>
-        <option>ศิลปกรรม</option>
-        <option>สถาปัตยกรรม</option>
-        <option>ภูมิสถาปัตยกรรม</option>
-        <option>สถาปัตยกรรมภายใน</option>
-        <option>นิเทศศิลป์</option>
-        <option>ภาพยนตร์</option>
-        <option>อนิเมชัน</option>
-        <option>การถ่ายภาพ</option>
-        <option>ศิลปอุตสาหกรรม</option>
-        <option>แฟชั่น</option>
-        <option>พื้นฐาน</option>
-      </select>
+    <nav class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('checkin')" id="tab-checkin">
+        <span class="tab-icon">✅</span>เช็คชื่อ
+      </button>
+      <button class="tab-btn" onclick="switchTab('report')" id="tab-report">
+        <span class="tab-icon">📋</span>รายงานประจำวัน
+      </button>
+    </nav>
+  </header>
+
+  <!-- ============================================================
+       TAB: CHECKIN
+  ============================================================ -->
+  <div id="page-checkin">
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <div class="filter-row">
+        <!-- Date -->
+        <div class="filter-group">
+          <span class="filter-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+            วันที่
+          </span>
+          <input type="date" id="checkin-date" class="form-control" />
+        </div>
+
+        <!-- Mode -->
+        <div class="filter-group">
+          <span class="filter-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            รูปแบบ
+          </span>
+          <div class="mode-pills">
+            <button class="pill-btn active" onclick="setMode('ติวสด')" id="pill-tutor">ติวสด</button>
+            <button class="pill-btn" onclick="setMode('ออนไลน์')" id="pill-online">ออนไลน์</button>
+          </div>
+        </div>
+
+        <!-- Dept -->
+        <div class="filter-group">
+          <span class="filter-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            ภาควิชา
+          </span>
+          <select id="filter-dept" class="form-control" onchange="renderStudentList()">
+            <option value="all">ทั้งหมด</option>
+            <option value="ศิลปกรรม">ศิลปกรรม</option>
+            <option value="สถาปัตยกรรม">สถาปัตยกรรม</option>
+            <option value="ภูมิสถาปัตยกรรม">ภูมิสถาปัตยกรรม/สถาปัตยกรรมไทย</option>
+            <option value="สถาปัตยกรรมภายใน">สถาปัตยกรรมภายใน/ออกแบบภายใน</option>
+            <option value="นิเทศศิลป์">นิเทศศิลป์/ออกแบบการสื่อสาร</option>
+            <option value="ภาพยนตร์">ภาพยนตร์</option>
+            <option value="อนิเมชัน">อนิเมชัน</option>
+            <option value="การถ่ายภาพ">การถ่ายภาพ</option>
+            <option value="ศิลปอุตสาหกรรม">ศิลปอุตสาหกรรม/จิวเวลรี่</option>
+            <option value="แฟชั่น">แฟชั่น</option>
+            <option value="พื้นฐาน">พื้นฐาน</option>
+          </select>
+        </div>
+      </div>
     </div>
-    <div class="sep"></div>
-    <div class="search-wrap">
-      <span class="search-ico">🔍</span>
-      <input type="text" id="att-search" placeholder="ค้นหาชื่อ / โรงเรียน…" oninput="renderAttendance()"/>
+
+    <!-- Summary strip -->
+    <div class="summary-strip">
+      <span style="font-size:13px;font-weight:600;color:var(--navy);">สรุปวันนี้</span>
+      <div class="summary-chip" id="chip-total">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        แสดง <span class="chip-count" id="count-show">0</span>
+      </div>
+      <div class="summary-chip orange" id="chip-checked">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        เช็คแล้ว <span class="chip-count" id="count-checked">0</span>
+      </div>
+    </div>
+
+    <!-- Student List -->
+    <div class="section-content">
+      <div class="student-list" id="student-list">
+        <div class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <p>กำลังโหลดข้อมูล...</p>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="chips" id="att-chips" style="display:none">
-    <div class="chip chip-b" id="chip-total">👥 0 คน</div>
-    <div class="chip chip-g" id="chip-checked">✅ เช็คแล้ว 0</div>
-    <div class="chip chip-gr" id="chip-left">⏳ รอเช็ค 0</div>
-  </div>
+  <!-- ============================================================
+       TAB: REPORT
+  ============================================================ -->
+  <div id="page-report" style="display:none;">
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <div class="filter-row">
+        <div class="filter-group">
+          <span class="filter-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+            วันที่
+          </span>
+          <input type="date" id="report-date" class="form-control" onchange="loadReport()" />
+        </div>
+      </div>
+    </div>
 
-  <div class="list" id="att-list">
-    <div class="state">
-      <div class="state-ico">🏫</div>
-      <p>เลือกภาควิชาเพื่อแสดงรายชื่อนักเรียน</p>
+    <!-- Summary strip -->
+    <div class="summary-strip">
+      <span style="font-size:13px;font-weight:600;color:var(--navy);">สรุปการเช็คชื่อ</span>
+      <div class="summary-chip">
+        รวม <span class="chip-count" id="report-count-total">0</span>
+      </div>
+      <div class="summary-chip">
+        ติวสด <span class="chip-count" id="report-count-tutor">0</span>
+      </div>
+      <div class="summary-chip orange">
+        ออนไลน์ <span class="chip-count" id="report-count-online">0</span>
+      </div>
+    </div>
+
+    <!-- Report Table -->
+    <div class="section-content">
+      <div class="report-table-wrap">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>ชื่อเล่น</th>
+              <th>โรงเรียน</th>
+              <th>ภาควิชา</th>
+              <th>รูปแบบ</th>
+            </tr>
+          </thead>
+          <tbody id="report-tbody"></tbody>
+        </table>
+      </div>
+      <div id="report-empty" class="empty-state" style="display:none;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        <p>ไม่มีรายชื่อในวันที่เลือก</p>
+      </div>
     </div>
   </div>
+
 </div>
 
-<div class="page" id="page-report">
-  <div class="toolbar">
-    <div class="field">
-      <span class="lbl">📅 วันที่</span>
-      <input type="date" id="rep-date" onchange="renderReport()"/>
-    </div>
-  </div>
-  <div id="rep-content">
-    <div class="state"><div class="state-ico">📊</div><p>เลือกวันที่เพื่อดูรายงาน</p></div>
-  </div>
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loading-overlay" style="display:none;">
+  <div class="spinner"></div>
 </div>
 
-<div id="toast"></div>
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
 
+<!-- ============================================================
+     JAVASCRIPT
+============================================================ -->
 <script>
-/* ─────────────────────────────────────────
-   CONFIG
-───────────────────────────────────────── */
-// นำ URL Web App ของคุณมาใส่ตรงนี้
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyftmXqCv2YbMtPLyHR1ANdJaZ4zTCyNDDrY5shpg_AvwM_ZY7diIM__-a1m7a0xNig/exec';
+// ============================================================
+// STATE
+// ============================================================
+let allStudents  = [];
+let checkedMap   = {};   // phone -> [modes]
+let currentMode  = 'ติวสด';
+let currentDate  = '';
 
-/* ─────────────────────────────────────────
-   STATE
-───────────────────────────────────────── */
-let students  = [];          // Active rows from Student_Master
-let logCache  = [];          // Today's Attendance_Log rows (cached per date)
-let logDate   = '';          // Which date logCache belongs to
-let checked   = {};          // local { key: true } persisted in localStorage
+// Dept alias map for fuzzy matching
+const DEPT_ALIASES = {
+  'ศิลปกรรม':         ['ศิลปกรรม','fine art','fine arts'],
+  'สถาปัตยกรรม':      ['สถาปัตยกรรม','architecture'],
+  'ภูมิสถาปัตยกรรม':  ['ภูมิสถาปัตยกรรม','สถาปัตยกรรมไทย','landscape'],
+  'สถาปัตยกรรมภายใน': ['สถาปัตยกรรมภายใน','ออกแบบภายใน','interior'],
+  'นิเทศศิลป์':       ['นิเทศศิลป์','ออกแบบการสื่อสาร','communication','visual communication'],
+  'ภาพยนตร์':         ['ภาพยนตร์','film'],
+  'อนิเมชัน':         ['อนิเมชัน','animation'],
+  'การถ่ายภาพ':       ['การถ่ายภาพ','photography'],
+  'ศิลปอุตสาหกรรม':   ['ศิลปอุตสาหกรรม','จิวเวลรี่','industrial','jewellery','jewelry'],
+  'แฟชั่น':           ['แฟชั่น','fashion'],
+  'พื้นฐาน':          ['พื้นฐาน','foundation'],
+};
 
-/* ─────────────────────────────────────────
-   INIT
-───────────────────────────────────────── */
-window.addEventListener('DOMContentLoaded', () => {
-  const today = todayISO();
-  document.getElementById('att-date').value = today;
-  document.getElementById('rep-date').value = today;
-  loadLocal();
-  fetchStudents();
+// ============================================================
+// GOOGLE APPS SCRIPT BRIDGE
+// ============================================================
+function callGAS(fnName, ...args) {
+  return new Promise((resolve, reject) => {
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(reject)
+        [fnName](...args);
+    } else {
+      // Demo mode — mock data for testing outside GAS
+      console.warn('[DEMO] GAS not available. Using mock data.');
+      resolve(getMockData(fnName, ...args));
+    }
+  });
+}
+
+function getMockData(fnName, ...args) {
+  if (fnName === 'getStudents') {
+    return {
+      success: true,
+      data: [
+        { rowIndex: 2, nickname: 'ป๊อป', fullname: 'ปภาดา รัตนสุข', school: 'โรงเรียนสาธิต', dept: 'สถาปัตยกรรม', phone: '0812345678', course: 'เหมา', remaining: '', expire: '30/07/2568', period: '1', buttons: ['ติวสด','วิชาภาค','วาดเส้น'], warnRemaining: false, warnExpire: false },
+        { rowIndex: 3, nickname: 'มิ้น', fullname: 'ณิชาภัทร พิริยะ', school: 'โรงเรียนเตรียมอุดม', dept: 'ศิลปกรรม', phone: '0823456789', course: 'ติวสด เข้ม 30 วัน', remaining: '5', expire: '15/06/2568', period: '2', buttons: ['ติวสด'], warnRemaining: false, warnExpire: true },
+        { rowIndex: 4, nickname: 'ไอซ์', fullname: 'ธนัท วงษ์สวรรค์', school: 'Triamudom', dept: 'นิเทศศิลป์', phone: '0834567890', course: 'คอร์สออนไลน์ [10 ครั้ง/30 วัน]', remaining: '2', expire: '20/06/2568', period: '1', buttons: ['วิชาภาค'], warnRemaining: true, warnExpire: true },
+        { rowIndex: 5, nickname: 'เฟิร์น', fullname: 'วิชญา มาลัย', school: 'โรงเรียนสวนกุหลาบ', dept: 'ภาพยนตร์', phone: '0845678901', course: 'Mix เหมา+ออนไลน์', remaining: '', expire: '10/08/2568', period: '3', buttons: ['ติวสด','วิชาภาค','วาดเส้น'], warnRemaining: false, warnExpire: false },
+        { rowIndex: 6, nickname: 'นัท', fullname: 'วรนัน ศรีเมือง', school: 'โรงเรียนหอวัง', dept: 'อนิเมชัน', phone: '0856789012', course: 'คอร์สออนไลน์ [Buffet/30 วัน]', remaining: '8', expire: '25/07/2568', period: '1', buttons: ['วิชาภาค','วาดเส้น'], warnRemaining: false, warnExpire: false },
+      ]
+    };
+  }
+  if (fnName === 'getAttendanceToday') {
+    return { success: true, checkedPhones: {} };
+  }
+  if (fnName === 'saveAttendance') {
+    return { success: true };
+  }
+  if (fnName === 'getAttendanceLog') {
+    return { success: true, data: [], countTutor: 0, countOnline: 0 };
+  }
+  return null;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  const today = getTodayStr();
+  currentDate = today;
+  document.getElementById('checkin-date').value = today;
+  document.getElementById('report-date').value  = today;
+  document.getElementById('checkin-date').addEventListener('change', onDateChange);
+  loadCheckinPage();
 });
 
-/* ─────────────────────────────────────────
-   GAS HELPER
-───────────────────────────────────────── */
-function gasCall(params) {
-  const qs = new URLSearchParams(params).toString();
-  return fetch(`${GAS_URL}?${qs}`)
-    .then(r => r.json());
-}
-function gasPost(body) {
-  return fetch(GAS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify(body)
-  }).then(r => r.json());
+function getTodayStr() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = (d.getMonth()+1).toString().padStart(2,'0');
+  const dd= d.getDate().toString().padStart(2,'0');
+  return `${y}-${m}-${dd}`;
 }
 
-/* ─────────────────────────────────────────
-   FETCH STUDENTS
-───────────────────────────────────────── */
-async function fetchStudents() {
-  setSyncState('loading','กำลังโหลด…');
+async function loadCheckinPage() {
+  showLoading(true);
   try {
-    const data = await gasCall({ action: 'getStudents' });
-    if (data.error) throw new Error(data.error);
-    students = data.students || [];
-    setSyncState('ok', `โหลดแล้ว ${students.length} คน`);
-    renderAttendance();
+    const [studRes, attRes] = await Promise.all([
+      callGAS('getStudents'),
+      callGAS('getAttendanceToday', currentDate)
+    ]);
+    if (!studRes.success) throw new Error(studRes.error);
+    if (!attRes.success)  throw new Error(attRes.error);
+
+    allStudents = studRes.data;
+    checkedMap  = attRes.checkedPhones || {};
+    renderStudentList();
   } catch(e) {
-    setSyncState('err', 'โหลดไม่สำเร็จ — ' + e.message);
-    showList(`<div class="state"><div class="state-ico">⚠️</div><p>โหลดข้อมูลไม่สำเร็จ<br><small>${e.message}</small></p></div>`);
+    showToast('โหลดข้อมูลไม่สำเร็จ: ' + e.message, 'error');
+  } finally {
+    showLoading(false);
   }
 }
 
-/* ─────────────────────────────────────────
-   FETCH LOG for date
-───────────────────────────────────────── */
-async function fetchLog(date) {
-  if (logDate === date) return logCache;  
-  try {
-    const data = await gasCall({ action: 'getLog', date });
-    logCache = data.rows || [];
-    logDate  = date;
-    return logCache;
-  } catch {
-    return [];
-  }
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+function switchTab(tab) {
+  document.getElementById('page-checkin').style.display = tab === 'checkin' ? '' : 'none';
+  document.getElementById('page-report').style.display  = tab === 'report'  ? '' : 'none';
+  document.getElementById('tab-checkin').classList.toggle('active', tab === 'checkin');
+  document.getElementById('tab-report').classList.toggle('active',  tab === 'report');
+  if (tab === 'report') loadReport();
 }
 
-/* ─────────────────────────────────────────
-   RENDER ATTENDANCE
-───────────────────────────────────────── */
-async function renderAttendance() {
-  const date  = document.getElementById('att-date').value;
-  const dept  = document.getElementById('att-dept').value;
-  const q     = document.getElementById('att-search').value.toLowerCase();
-  const chips = document.getElementById('att-chips');
-
-  if (!dept) {
-    chips.style.display = 'none';
-    showList(`<div class="state"><div class="state-ico">🏫</div><p>เลือกภาควิชาเพื่อแสดงรายชื่อนักเรียน</p></div>`);
-    return;
-  }
-  if (!students.length) {
-    chips.style.display = 'none';
-    showList(`<div class="state"><div class="spinner"></div><p>กำลังโหลดข้อมูล…</p></div>`);
-    return;
-  }
-
-  // ── filter ──
-  let list = students.filter(s => {
-    const dm = s.dept && s.dept.includes(dept);
-    const qm = q ? (s.nickname+s.fullname+s.school).toLowerCase().includes(q) : true;
-    return dm && qm;
-  });
-
-  if (!list.length) {
-    chips.style.display = 'none';
-    showList(`<div class="state"><div class="state-ico">🔍</div><p>ไม่พบนักเรียนในภาควิชานี้</p></div>`);
-    return;
-  }
-
-  // ── sync log from sheet for this date (ดักซ้ำด้วย normPhone) ──
-  const logRows = await fetchLog(date);
-  const serverChecked = new Set();
-  logRows.forEach(r => {
-    if (r.phone && r.type) serverChecked.add(`${normPhone(r.phone)}__${r.type}`);
-  });
-
-  // ── today alerts ──
-  const today   = new Date(date);
-  const warn7   = new Date(date); warn7.setDate(warn7.getDate() + 7);
-
-  let checkedCount = 0;
-  const cards = list.map(s => {
-    const btns = buildBtns(s, date, serverChecked);
-    const anyDone = btns.some(b => b.done);
-    if (anyDone) checkedCount++;
-
-    const isMao   = /เหมา|mix/i.test(s.courseRaw);
-    const remNum  = parseInt(s.remaining);
-    const showRem = isMao ? '—' : (isNaN(remNum) ? s.remaining : remNum);
-    let alerts = '';
-    if (!isMao && !isNaN(remNum) && remNum <= 2) {
-      alerts += remNum === 0
-        ? `<div class="alert alert-d">⚠️ ครั้งเรียนหมดแล้ว กรุณาต่อคอร์ส</div>`
-        : `<div class="alert alert-w">⏳ เหลือครั้งเรียนอีก ${remNum} ครั้ง</div>`;
-    }
-    if (s.expiry) {
-      const exp = parseDateAny(s.expiry);
-      if (exp) {
-        if (exp <= today)      alerts += `<div class="alert alert-d">🗓️ อายุคอร์สหมดแล้ว (${fmtDate(s.expiry)})</div>`;
-        else if (exp <= warn7) alerts += `<div class="alert alert-w">🗓️ อายุคอร์สใกล้หมด — ${fmtDate(s.expiry)}</div>`;
-      }
-    }
-
-    return `
-<div class="card${anyDone?' done':''}" id="card-${esc(s.phone)}">
-  <div class="card-row">
-    <div class="card-info">
-      <div class="name-row">
-        <span class="nickname">${esc(s.nickname)}</span>
-        <span class="fullname">${esc(s.fullname)}</span>
-      </div>
-      <div class="meta">
-        <span class="mi"><span class="mi-ico">🏫</span>${esc(s.school)}</span>
-        <span class="mi"><span class="mi-ico">📱</span>${esc(s.phone)}</span>
-        <span class="mi"><span class="mi-ico">🎓</span>${esc(s.dept)}</span>
-      </div>
-      <div class="meta" style="margin-top:5px">
-        <span class="badge badge-c">${esc(s.courseRaw)}</span>
-        ${!isMao?`<span class="mi"><span class="mi-ico">🔢</span>เหลือ ${esc(String(showRem))} ครั้ง</span>`:''}
-        ${s.expiry?`<span class="mi"><span class="mi-ico">📆</span>${fmtDate(s.expiry)}</span>`:''}
-        ${s.round?`<span class="mi"><span class="mi-ico">⏰</span>รอบคอร์สที่ ${esc(s.round)}</span>`:''}
-      </div>
-      ${alerts?`<div class="alerts">${alerts}</div>`:''}
-    </div>
-    <div class="btns" id="btns-${esc(s.phone)}">
-      ${btns.map(b => renderCBtn(b, s, date)).join('')}
-    </div>
-  </div>
-</div>`;
-  });
-
-  showList(cards.join(''));
-
-  // chips
-  chips.style.display = 'flex';
-  document.getElementById('chip-total').textContent   = `👥 ${list.length} คน`;
-  document.getElementById('chip-checked').textContent  = `✅ เช็คแล้ว ${checkedCount}`;
-  document.getElementById('chip-left').textContent     = `⏳ รอเช็ค ${list.length - checkedCount}`;
+// ============================================================
+// FILTER & RENDER
+// ============================================================
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('pill-tutor').classList.toggle('active',  mode === 'ติวสด');
+  document.getElementById('pill-online').classList.toggle('active', mode === 'ออนไลน์');
+  renderStudentList();
 }
 
-/* ─────────────────────────────────────────
-   BUILD BUTTONS logic
-───────────────────────────────────────── */
-function buildBtns(s, date, serverChecked) {
-  const c = s.courseRaw || '';
-  const isMao    = /เหมา|mix/i.test(c);
-  const hasLive  = /ติวสด/.test(c);
-  const hasOnl   = /ออนไลน์/.test(c);
+function onDateChange() {
+  currentDate = document.getElementById('checkin-date').value;
+  callGAS('getAttendanceToday', currentDate).then(res => {
+    checkedMap = (res && res.checkedPhones) ? res.checkedPhones : {};
+    renderStudentList();
+  });
+}
 
-  let types = [];
-  if (isMao || (hasLive && hasOnl)) {
-    types = ['ติวสด','ออนไลน์วิชาภาค','ออนไลน์วาดเส้น'];
-  } else if (hasLive) {
-    types = ['ติวสด'];
-  } else if (hasOnl) {
-    types = ['ออนไลน์วิชาภาค','ออนไลน์วาดเส้น'];
+function deptMatches(studentDept, filterVal) {
+  if (filterVal === 'all') return true;
+  const d = studentDept.toLowerCase();
+  const aliases = DEPT_ALIASES[filterVal] || [filterVal];
+  return aliases.some(a => d.includes(a.toLowerCase()));
+}
+
+function modeMatches(student, mode) {
+  const c = student.course.toLowerCase();
+  if (mode === 'ติวสด') {
+    return c.includes('เหมา') || c.includes('mix') || c.includes('ติวสด');
   } else {
-    types = ['ติวสด']; 
+    return c.includes('ออนไลน์') || c.includes('mix') || c.includes('เหมา');
+  }
+}
+
+function renderStudentList() {
+  const deptFilter = document.getElementById('filter-dept').value;
+  const list = document.getElementById('student-list');
+
+  const filtered = allStudents.filter(s =>
+    modeMatches(s, currentMode) && deptMatches(s.dept, deptFilter)
+  );
+
+  // Update summary
+  const checkedCount = filtered.filter(s => {
+    const modes = checkedMap[s.phone] || [];
+    return modes.some(m => resolveCheckMode(m, currentMode));
+  }).length;
+
+  document.getElementById('count-show').textContent    = filtered.length;
+  document.getElementById('count-checked').textContent = checkedCount;
+
+  if (filtered.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        <p>ไม่มีนักเรียนในหมวดที่เลือก</p>
+      </div>`;
+    return;
   }
 
-  return types.map(t => {
-    const done = serverChecked.has(`${normPhone(s.phone)}__${t}`) || isCheckedLocal(s.phone, date, t);
-    return { type: t, label: typeLabel(t, s.dept), done };
-  });
+  list.innerHTML = filtered.map(s => buildStudentCard(s)).join('');
 }
 
-function typeLabel(type, dept) {
-  if (type === 'ติวสด')          return '✏️ ติวสด';
-  if (type === 'ออนไลน์วาดเส้น')   return '🖊️ วาดเส้น';
-  if (type === 'ออนไลน์วิชาภาค') return `📚 ${deptSubject(dept)}`;
-  return type;
+function resolveCheckMode(logMode, currentMode) {
+  if (currentMode === 'ออนไลน์') return logMode === 'วิชาภาค' || logMode === 'วาดเส้น';
+  return logMode === currentMode || logMode === 'ติวสด';
 }
 
-function deptSubject(dept) {
-  const map = {
-    'ศิลปกรรม':'วิชาศิลปกรรม','สถาปัตยกรรม':'วิชาสถาปัตย์',
-    'ภูมิสถาปัตยกรรม':'วิชาภูมิสถาปัตย์','สถาปัตยกรรมภายใน':'วิชาออกแบบภายใน',
-    'นิเทศศิลป์':'วิชานิเทศศิลป์','ภาพยนตร์':'วิชาภาพยนตร์',
-    'อนิเมชัน':'วิชาอนิเมชัน','การถ่ายภาพ':'วิชาถ่ายภาพ',
-    'ศิลปอุตสาหกรรม':'วิชาจิวเวลรี่','แฟชั่น':'วิชาแฟชั่น','พื้นฐาน':'วิชาพื้นฐาน'
-  };
-  for (const k in map) { if ((dept||'').includes(k)) return map[k]; }
-  return 'วิชาภาค';
-}
+// ============================================================
+// BUILD STUDENT CARD
+// ============================================================
+function buildStudentCard(s) {
+  const avatarLetter = s.nickname ? s.nickname[0] : '?';
+  const checkedModes = checkedMap[s.phone] || [];
 
-function renderCBtn(b, s, date) {
-  if (b.done) return `<button class="cbtn done">${b.label} ✓</button>`;
-  // อัปเดตข้อมูลส่งไป Backend ให้ตรงกับ 7 คอลัมน์ (date, phone, nickname, school, dept, round, type)
-  const onclick = `doCheck(this,'${esc(s.phone)}','${esc(s.nickname)}','${esc(s.school)}','${esc(s.dept)}','${esc(s.round)}','${b.type}','${esc(b.label)}','${date}')`;
-  return `<button class="cbtn" onclick="${onclick}">${b.label}</button>`;
-}
+  // Build buttons
+  const btnHtml = s.buttons.map(btnType => {
+    const modeKey = btnType === 'ติวสด' ? 'ติวสด' : btnType;
+    const alreadyChecked = checkedModes.includes(modeKey);
+    const cls = btnType === 'ติวสด' ? 'tutor' : (btnType === 'วาดเส้น' ? 'watsen' : 'online');
 
-/* ─────────────────────────────────────────
-   DO CHECK (แก้ไข: กด 1 ปุ่ม แถบเปลี่ยนสีทันที)
-───────────────────────────────────────── */
-async function doCheck(btnEl, phone, nickname, school, dept, round, type, label, date) {
-  if (btnEl.classList.contains('saving') || btnEl.classList.contains('done')) return;
-  btnEl.classList.add('saving');
-  btnEl.textContent = '⏳…';
-
-  try {
-    const resp = await gasPost({
-      action: 'addLog',
-      date, phone, nickname, school, dept, round, type
-    });
-    if (resp && resp.error) throw new Error(resp.error);
-
-    markLocal(phone, date, type);
-    logCache.push({ date, phone, nickname, school, dept, round, type });
-
-    btnEl.classList.remove('saving');
-    btnEl.classList.add('done');
-    btnEl.textContent = label + ' ✓';
-    showToast(`✅ เช็คชื่อ ${nickname} — ${label}`, 'ok');
-
-    // --- ส่วนที่แก้ไข: เพิ่ม class 'done' ให้การ์ดใบนี้ทันที ---
-    const card = btnEl.closest('.card');
-    if (card) {
-      card.classList.add('done');
+    if (alreadyChecked) {
+      return `<button class="btn-check locked-btn" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        ${btnType}
+      </button>`;
     }
-    // ---------------------------------------------------
+    return `<button class="btn-check ${cls}"
+      onclick="doCheckIn('${escape(JSON.stringify(s))}', '${modeKey}')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      ${btnType}
+    </button>`;
+  }).join('');
 
-    updateChips();
+  // Warnings
+  let warnHtml = '';
+  if (s.warnRemaining) warnHtml += `<div class="warn-banner">⚠️ ครั้งเรียนเหลือน้อย (${s.remaining} ครั้ง)</div>`;
+  if (s.warnExpire)    warnHtml += `<div class="warn-banner">⚠️ คอร์สใกล้หมดอายุ (${s.expire})</div>`;
+
+  // Tags
+  const deptTag    = s.dept    ? `<span class="tag dept">${s.dept}</span>` : '';
+  const periodTag  = s.period  ? `<span class="tag">รอบ ${s.period}</span>` : '';
+
+  // Remaining display
+  const remainDisplay = s.remaining && s.remaining !== ''
+    ? `<span class="meta-item${s.warnRemaining?' warn':''}">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        เหลือ ${s.remaining} ครั้ง
+      </span>` : '';
+
+  // Expire display
+  const expireDisplay = s.expire
+    ? `<span class="meta-item${s.warnExpire?' warn':''}">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        ${s.expire}
+      </span>` : '';
+
+  const isLocked = s.buttons.length > 0 && s.buttons.every(b => (checkedMap[s.phone]||[]).includes(b === 'วิชาภาค' || b === 'วาดเส้น' ? b : b));
+
+  return `
+  <div class="student-card${isLocked?' locked':''}">
+    <div class="student-avatar">${avatarLetter}</div>
+    <div class="student-body">
+      <div class="student-name-row">
+        <span class="student-nickname">${esc(s.nickname)}</span>
+        <span class="student-fullname">${esc(s.fullname)}</span>
+        ${deptTag} ${periodTag}
+      </div>
+      <div class="student-meta">
+        <span class="meta-item">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          ${esc(s.school)}
+        </span>
+        ${remainDisplay} ${expireDisplay}
+        <span class="meta-item" style="color:var(--gray-400)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+          ${esc(s.course)}
+        </span>
+      </div>
+      ${warnHtml}
+    </div>
+    <div class="student-actions">
+      ${btnHtml}
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// CHECK IN ACTION
+// ============================================================
+async function doCheckIn(studentJson, mode) {
+  let s;
+  try { s = JSON.parse(unescape(studentJson)); }
+  catch(e) { showToast('ข้อมูลผิดพลาด', 'error'); return; }
+
+  showLoading(true);
+  try {
+    const payload = {
+      dateStr:  currentDate,
+      nickname: s.nickname,
+      school:   s.school,
+      phone:    s.phone,
+      dept:     s.dept,
+      period:   s.period,
+      mode:     mode
+    };
+
+    const res = await callGAS('saveAttendance', payload);
+    if (!res || !res.success) throw new Error(res ? res.error : 'บันทึกไม่สำเร็จ');
+
+    // Update local state
+    if (!checkedMap[s.phone]) checkedMap[s.phone] = [];
+    checkedMap[s.phone].push(mode);
+
+    renderStudentList();
+    showToast(`✅ เช็คชื่อ ${s.nickname} — ${mode} สำเร็จ`, 'success');
   } catch(e) {
-    btnEl.classList.remove('saving');
-    btnEl.textContent = label;
-    showToast('บันทึกไม่สำเร็จ: ' + e.message, 'err');
+    showToast('ไม่สำเร็จ: ' + e.message, 'error');
+  } finally {
+    showLoading(false);
   }
 }
 
-
-function updateChips() {
-  const all   = document.querySelectorAll('.card');
-  const done  = document.querySelectorAll('.card.done');
-  document.getElementById('chip-total').textContent   = `👥 ${all.length} คน`;
-  document.getElementById('chip-checked').textContent  = `✅ เช็คแล้ว ${done.length}`;
-  document.getElementById('chip-left').textContent     = `⏳ รอเช็ค ${all.length - done.length}`;
-  document.querySelectorAll('.card').forEach(card => {
-    const btns = card.querySelectorAll('.cbtn');
-    const allDone = [...btns].every(b => b.classList.contains('done'));
-    if (allDone && btns.length) card.classList.add('done');
-  });
-}
-
-/* ─────────────────────────────────────────
-   RENDER REPORT
-───────────────────────────────────────── */
-async function renderReport() {
-  const date = document.getElementById('rep-date').value;
-  const box  = document.getElementById('rep-content');
-  box.innerHTML = `<div class="state"><div class="spinner"></div><p>กำลังโหลด…</p></div>`;
-
+// ============================================================
+// REPORT PAGE
+// ============================================================
+async function loadReport() {
+  const dateStr = document.getElementById('report-date').value;
+  showLoading(true);
   try {
-    const data = await gasCall({ action: 'getLog', date });
-    const allRows = data.rows || [];
+    const res = await callGAS('getAttendanceLog', dateStr);
+    if (!res || !res.success) throw new Error(res ? res.error : 'โหลดไม่สำเร็จ');
 
-    // กรองประวัติรายวันให้แสดงเฉพาะวันที่ตรงกันเป๊ะๆ
-    const rows = allRows.filter(r => isSameDate(r.date, date));
+    const tbody = document.getElementById('report-tbody');
+    const empty = document.getElementById('report-empty');
 
-    if (!rows.length) {
-      box.innerHTML = `<div class="state"><div class="state-ico">📭</div><p>ไม่มีข้อมูลวันที่ ${fmtDateISO(date)}</p></div>`;
+    document.getElementById('report-count-total').textContent  = res.data.length;
+    document.getElementById('report-count-tutor').textContent  = res.countTutor  || 0;
+    document.getElementById('report-count-online').textContent = res.countOnline || 0;
+
+    if (res.data.length === 0) {
+      tbody.innerHTML = '';
+      empty.style.display = '';
       return;
     }
 
-    const tbody = rows.map((r,i) => `
-<tr>
-  <td class="num">${i+1}</td>
-  <td><strong>${esc(r.nickname||'')}</strong></td>
-  <td style="font-size:13px;color:var(--txt2)">${esc(r.school||'-')}</td>
-  <td>${esc(r.phone||'')}</td>
-  <td style="font-size:13px;color:var(--txt2)">${esc(r.dept||'-')}</td>
-  <td style="color:var(--txt3);font-size:13px">${esc(r.round||'-')}</td>
-  <td><span class="pill ${pillClass(r.type)}">${esc(r.type||'')}</span></td>
-</tr>`).join('');
-
-    box.innerHTML = `
-<div class="chips"><div class="chip chip-b">📋 ${fmtDateISO(date)} — ${rows.length} รายการ</div></div>
-<table class="rtable">
-  <thead><tr><th>#</th><th>ชื่อเล่น</th><th>โรงเรียน</th><th>เบอร์โทรศัพท์</th><th>ภาควิชา</th><th>รอบ</th><th>รูปแบบ</th></tr></thead>
-  <tbody>${tbody}</tbody>
-</table>`;
+    empty.style.display = 'none';
+    tbody.innerHTML = res.data.map(r => {
+      const modeClass = r.mode === 'ติวสด' ? 'tutor' : (r.mode === 'วาดเส้น' ? 'watsen' : 'online');
+      return `<tr>
+        <td>${r.no}</td>
+        <td><strong>${esc(r.nickname)}</strong></td>
+        <td>${esc(r.school)}</td>
+        <td>${esc(r.dept)}</td>
+        <td><span class="mode-badge ${modeClass}">${esc(r.mode)}</span></td>
+      </tr>`;
+    }).join('');
   } catch(e) {
-    box.innerHTML = `<div class="state"><div class="state-ico">⚠️</div><p>โหลดไม่สำเร็จ: ${e.message}</p></div>`;
+    showToast('โหลดรายงานไม่สำเร็จ: ' + e.message, 'error');
+  } finally {
+    showLoading(false);
   }
 }
 
-function pillClass(t) {
-  if (!t) return '';
-  if (t.includes('ติวสด'))   return 'pill-live';
-  if (t.includes('วาดเส้น')) return 'pill-draw';
-  return 'pill-online';
+// ============================================================
+// UTILITIES
+// ============================================================
+function showLoading(show) {
+  document.getElementById('loading-overlay').style.display = show ? '' : 'none';
 }
 
-/* ─────────────────────────────────────────
-   LOCAL STORAGE — fallback persist
-───────────────────────────────────────── */
-function lcKey(ph, dt, tp) { return `anl__${ph}__${dt}__${tp}`; }
-function loadLocal() {
-  try { checked = JSON.parse(localStorage.getItem('anl_checked')||'{}'); } catch{ checked={}; }
-}
-function markLocal(ph, dt, tp) { checked[lcKey(ph,dt,tp)]=true; localStorage.setItem('anl_checked',JSON.stringify(checked)); }
-function isCheckedLocal(ph, dt, tp) { return !!checked[lcKey(ph,dt,tp)]; }
-
-/* ─────────────────────────────────────────
-   UTILS
-───────────────────────────────────────── */
-function todayISO() { return new Date().toISOString().slice(0,10); }
-
-// ฟังก์ชันแปลงเบอร์โทร: ตัดอักขระที่ไม่ใช่ตัวเลขออก และตัด '0' ข้างหน้าออกเพื่อความแม่นยำตอนเทียบ
-function normPhone(p) {
-  return String(p || '').replace(/[^0-9]/g, '').replace(/^0+/, '');
+function showToast(msg, type = 'success') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3500);
 }
 
-// ฟังก์ชันตรวจเช็ควันที่ให้แม่นยำ
-function isSameDate(logDateStr, targetIso) {
-  if (!logDateStr || !targetIso) return false;
-  return logDateStr.includes(targetIso) || targetIso.includes(logDateStr);
+function esc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
 }
 
-function parseDateAny(str) {
-  if (!str) return null;
-  const d = new Date(str);
-  return isNaN(d) ? null : d;
-}
-function fmtDate(str) {
-  const d = parseDateAny(str);
-  if (!d) return str;
-  return d.toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});
-}
-function fmtDateISO(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d)) return iso;
-  return d.toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});
+function escape(str) {
+  return encodeURIComponent(str);
 }
 
-function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-function showList(html) { document.getElementById('att-list').innerHTML = html; }
-
-function setSyncState(st, msg) {
-  const dot = document.getElementById('sync-dot');
-  const lbl = document.getElementById('sync-label');
-  dot.className = 'dot ' + st;
-  lbl.textContent = msg;
-}
-
-let tTimer;
-function showToast(msg, cls='') {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.className = 'show ' + cls;
-  clearTimeout(tTimer);
-  tTimer = setTimeout(()=>{ t.className=''; }, 2800);
-}
-
-function goTab(tab, el) {
-  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-'+tab).classList.add('active');
-  if (tab === 'report') renderReport();
+function unescape(str) {
+  return decodeURIComponent(str);
 }
 </script>
 
 </body>
 </html>
-
-
