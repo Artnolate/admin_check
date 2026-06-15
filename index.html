@@ -717,11 +717,11 @@ body {
 // STATE & CONFIG
 // ============================================================
 let allStudents = [];
-let checkedMap  = {};   // { "0812345678": ["ติวสด", "วิชาภาค"] }
+let checkedMap  = {};   // { "CleanKey": ["ติวสด", "วิชาภาค"] }
 let currentMode = 'ติวสด';
 let currentDate = '';
 
-// วาง URL ของ Web App ที่ได้จาก Google Apps Script ที่นี่
+// ⚠️ วาง URL ของ Web App ที่ได้จาก Google Apps Script ที่นี่
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbydiV31SspWt7Y9kyTOIa09f1AzzgVQQiw_6h5-Ez6qk4ScQ_OgXjHnQJ1aoXvDBnuu/exec';
 
 const DEPT_KEYS = {
@@ -738,25 +738,34 @@ const DEPT_KEYS = {
   'พื้นฐาน':           ['พื้นฐาน'],
 };
 
+// ฟังก์ชันเคลียร์ค่า ID ฝั่ง Client เพื่อให้จับคู่ได้ 100% แม้เบอร์โทรศัพท์จะฟอร์แมตเพี้ยน
+function cleanId(phone, nickname, fullname) {
+  if (!phone) return String(nickname + "_" + fullname).trim();
+  let str = String(phone).trim().replace(/\.0$/, '');
+  if (str.startsWith('0')) {
+    str = str.substring(1);
+  }
+  if (!str || str === 'undefined' || str === 'null') {
+    return String(nickname + "_" + fullname).trim();
+  }
+  return str;
+}
+
 // ============================================================
-// GAS BRIDGE — เรียกฟังก์ชันใน Code.gs
+// GAS BRIDGE — เปลี่ยนเป็นส่งแบบ GET ทั้งหมดเพื่อแก้ปัญหา CORS บล็อกข้อมูล
 // ============================================================
 async function callGAS(fn, ...args) {
   const url = new URL(GAS_URL);
+  url.searchParams.append('action', fn);
   
   if (fn === 'saveAttendance') {
-    const response = await fetch(GAS_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'saveAttendance', data: args[0] })
-    });
-    return await response.json();
-  } else {
-    url.searchParams.append('action', fn);
-    if (args[0]) url.searchParams.append('dateStr', args[0]);
-    
-    const response = await fetch(url, { method: 'GET' });
-    return await response.json();
+    url.searchParams.append('data', JSON.stringify(args[0]));
+  } else if (args[0]) {
+    url.searchParams.append('dateStr', args[0]);
   }
+  
+  const response = await fetch(url, { method: 'GET' });
+  return await response.json();
 }
 
 // ============================================================
@@ -865,7 +874,8 @@ function renderList() {
 
   let checkedCnt = 0;
   filtered.forEach(s => {
-    const done = checkedMap[s.phone] || [];
+    const sKey = cleanId(s.phone, s.nickname, s.fullname);
+    const done = checkedMap[sKey] || [];
     const relevant = s.buttons.filter(b => btnMatchesMode(b, currentMode));
     if (relevant.length > 0 && relevant.every(b => done.includes(b))) checkedCnt++;
   });
@@ -890,7 +900,8 @@ function renderList() {
 // ============================================================
 function buildCard(s) {
   const letter = s.nickname ? s.nickname[0] : '?';
-  const done   = checkedMap[s.phone] || [];
+  const sKey   = cleanId(s.phone, s.nickname, s.fullname);
+  const done   = checkedMap[sKey] || [];
 
   const visibleBtns = s.buttons.filter(b => btnMatchesMode(b, currentMode));
   const allLocked   = visibleBtns.length > 0 && visibleBtns.every(b => done.includes(b));
@@ -965,6 +976,7 @@ async function doCheckIn(btn, sid, mode) {
     const res = await callGAS('saveAttendance', {
       dateStr: currentDate,
       nickname: s.nickname,
+      fullname: s.fullname,
       school: s.school,
       phone: s.phone,
       dept: s.dept,
@@ -974,13 +986,15 @@ async function doCheckIn(btn, sid, mode) {
     
     if (res.success) {
       toast(`✅ เช็คชื่อ ${s.nickname} (${mode}) สำเร็จ`, 'ok');
-      if (!checkedMap[s.phone]) checkedMap[s.phone] = [];
-      checkedMap[s.phone].push(mode);
       
-      // อัปเดต UI ฝั่ง Client ลดจำนวนลงชั่วคราวโดยไม่ต้องรอโหลดชีตใหม่ทั้งหมด
+      const sKey = cleanId(s.phone, s.nickname, s.fullname);
+      if (!checkedMap[sKey]) checkedMap[sKey] = [];
+      checkedMap[sKey].push(mode);
+      
+      // อัปเดต Client-Side เพื่อลบจำนวนครั้งเรียนในหน้าเว็บทันทีโดยไม่ต้องรีโหลดใหม่ทั้งหมด
       if(s.remaining !== '' && !isNaN(s.remaining) && s.remaining > 0) {
          allStudents = allStudents.map(st => {
-            if(st.phone === s.phone) {
+            if(cleanId(st.phone, st.nickname, st.fullname) === sKey) {
                st.remaining = st.remaining - 1;
                if(st.remaining <= 2) st.warnRemaining = true;
             }
