@@ -749,40 +749,40 @@ async function doCheckIn(btn, sid, mode) {
   let s = JSON.parse(decodeURIComponent(sid));
   showLoad(true);
 
-  // สำคัญมาก: ใส่ URL จริงที่ลงท้ายด้วย /exec
+  // URL ของ Web App (ต้องเป็นเวอร์ชันล่าสุดที่ Deploy แล้ว)
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbwy0jjqNph0MGvyUfcmtydSU2N2AfxZWZw23gPIGq5bK2KCTBWkzzJNpHFoY8JUukXL/exec';
 
   try {
+    // ส่งข้อมูลในรูปแบบ JSON โดยระบุ action เป็น 'addLog'
     const response = await fetch(GAS_URL, {
       method: 'POST',
       body: JSON.stringify({
-        action: 'saveAttendance',
-        data: {
-          dateStr: currentDate,
-          nickname: s.nickname,
-          school: s.school,
-          phone: s.phone,
-          dept: s.dept,
-          period: s.period,
-          mode: mode
-        }
+        action: 'addLog',        // ตรงกับ case 'addLog' ใน switch(p.action)
+        date: currentDate,       // ค่าวันที่ที่เลือก
+        nickname: s.nickname,
+        school: s.school,
+        phone: s.phone,
+        dept: s.dept,
+        round: s.round,          // ส่งค่ารอบ (แทนที่ค่าเดิม)
+        type: mode               // ส่งรูปแบบ (ติวสด/ออนไลน์)
       })
     });
     
     const res = await response.json();
+    
+    // ตรวจสอบผลลัพธ์จาก Google Apps Script
     if (res.success) {
-      toast(`✅ เช็คชื่อ ${s.nickname} สำเร็จ`, 'ok');
-      // อัปเดต state และ render ใหม่
-      if (!checkedMap[s.phone]) checkedMap[s.phone] = [];
-      checkedMap[s.phone].push(mode);
-      renderList();
+      toast(`✅ บันทึกชื่อ ${s.nickname} เรียบร้อยแล้ว`, 'ok');
+      
+      // เมื่อบันทึกสำเร็จ ให้รีเฟรชหน้าจอ
+      loadReport(); 
+      renderList(); 
     } else {
-      throw new Error(res.error);
+      // แสดงข้อความผิดพลาดจาก Backend (เช่น 'เช็คชื่อซ้ำในวันนี้แล้ว')
+      throw new Error(res.error || 'บันทึกไม่สำเร็จ');
     }
   } catch(e) {
-    toast('บันทึกไม่สำเร็จ: ' + e.message, 'err');
-    btn.disabled = false;
-    btn.classList.remove('locked-btn');
+    toast('แจ้งเตือน: ' + e.message, 'err');
   } finally {
     showLoad(false);
   }
