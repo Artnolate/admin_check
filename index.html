@@ -749,40 +749,28 @@ async function doCheckIn(btn, sid, mode) {
   let s = JSON.parse(decodeURIComponent(sid));
   showLoad(true);
 
-  // URL ของ Web App (ต้องเป็นเวอร์ชันล่าสุดที่ Deploy แล้ว)
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbwy0jjqNph0MGvyUfcmtydSU2N2AfxZWZw23gPIGq5bK2KCTBWkzzJNpHFoY8JUukXL/exec';
-
   try {
-    // ส่งข้อมูลในรูปแบบ JSON โดยระบุ action เป็น 'addLog'
-    const response = await fetch(GAS_URL, {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'addLog',        // ตรงกับ case 'addLog' ใน switch(p.action)
-        date: currentDate,       // ค่าวันที่ที่เลือก
-        nickname: s.nickname,
-        school: s.school,
-        phone: s.phone,
-        dept: s.dept,
-        round: s.round,          // ส่งค่ารอบ (แทนที่ค่าเดิม)
-        type: mode               // ส่งรูปแบบ (ติวสด/ออนไลน์)
-      })
+    // ส่งข้อมูลตามโครงสร้าง 7 คอลัมน์ที่ backend ต้องการ
+    const res = await callGAS('addLog', {
+      date: currentDate,
+      nickname: s.nickname,
+      school: s.school,
+      phone: s.phone,
+      dept: s.dept,
+      round: s.round,      // ตามโค้ด backend (เดิมอาจเป็น period)
+      type: mode
     });
     
-    const res = await response.json();
-    
-    // ตรวจสอบผลลัพธ์จาก Google Apps Script
     if (res.success) {
-      toast(`✅ บันทึกชื่อ ${s.nickname} เรียบร้อยแล้ว`, 'ok');
-      
-      // เมื่อบันทึกสำเร็จ ให้รีเฟรชหน้าจอ
+      toast(`✅ บันทึกของ ${s.nickname} เรียบร้อยแล้ว`, 'ok');
+      // อัปเดตตารางรายงานหรือรีเฟรชหน้าจอ
       loadReport(); 
-      renderList(); 
+      renderList();
     } else {
-      // แสดงข้อความผิดพลาดจาก Backend (เช่น 'เช็คชื่อซ้ำในวันนี้แล้ว')
       throw new Error(res.error || 'บันทึกไม่สำเร็จ');
     }
   } catch(e) {
-    toast('แจ้งเตือน: ' + e.message, 'err');
+    toast('บันทึกไม่สำเร็จ: ' + e.message, 'err');
   } finally {
     showLoad(false);
   }
