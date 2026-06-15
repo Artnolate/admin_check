@@ -507,21 +507,24 @@ function isoFromInput(inputId) {
 /* ══════════════════════════════════════
    LOAD DATA
 ══════════════════════════════════════ */
+// เปลี่ยนฟังก์ชัน loadStudents เป็นแบบนี้
 function loadStudents() {
   showLoading(true);
-  google.script.run
-    .withSuccessHandler(function(students) {
+  var url = 'https://script.google.com/macros/s/AKfycbwy0jjqNph0MGvyUfcmtydSU2N2AfxZWZw23gPIGq5bK2KCTBWkzzJNpHFoY8JUukXL/exec?action=getStudents';
+
+  fetch(url)
+    .then(response => response.json())
+    .then(students => {
       allStudents = students || [];
-      loadChecked(function() {
-        showLoading(false);
-        renderList();
-      });
+      // ถ้ามีฟังก์ชัน loadChecked ที่เรียกผ่าน GAS อยู่ ต้องเปลี่ยนเป็น fetch ด้วย
+      // สำหรับตอนนี้ให้ลอง renderList ดูก่อน
+      showLoading(false);
+      renderList();
     })
-    .withFailureHandler(function(err) {
+    .catch(err => {
       showLoading(false);
       showToast('โหลดข้อมูลไม่สำเร็จ: ' + err.message, 'error');
-    })
-    .getStudents();
+    });
 }
 
 function loadChecked(cb) {
