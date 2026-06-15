@@ -469,7 +469,7 @@ function renderCBtn(b, s, date) {
 }
 
 /* ─────────────────────────────────────────
-   DO CHECK
+   DO CHECK (แก้ไข: กด 1 ปุ่ม แถบเปลี่ยนสีทันที)
 ───────────────────────────────────────── */
 async function doCheck(btnEl, phone, nickname, school, dept, round, type, label, date) {
   if (btnEl.classList.contains('saving') || btnEl.classList.contains('done')) return;
@@ -491,6 +491,13 @@ async function doCheck(btnEl, phone, nickname, school, dept, round, type, label,
     btnEl.textContent = label + ' ✓';
     showToast(`✅ เช็คชื่อ ${nickname} — ${label}`, 'ok');
 
+    // --- ส่วนที่แก้ไข: เพิ่ม class 'done' ให้การ์ดใบนี้ทันที ---
+    const card = btnEl.closest('.card');
+    if (card) {
+      card.classList.add('done');
+    }
+    // ---------------------------------------------------
+
     updateChips();
   } catch(e) {
     btnEl.classList.remove('saving');
@@ -498,6 +505,8 @@ async function doCheck(btnEl, phone, nickname, school, dept, round, type, label,
     showToast('บันทึกไม่สำเร็จ: ' + e.message, 'err');
   }
 }
+
+
 
 function updateChips() {
   const all   = document.querySelectorAll('.card');
