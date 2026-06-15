@@ -491,29 +491,6 @@
 ====================================================== -->
 <script>
 // ============================================================
-// GAS BRIDGE — เปลี่ยนมาใช้ fetch เพื่อเรียก Web App URL
-// ============================================================
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwy0jjqNph0MGvyUfcmtydSU2N2AfxZWZw23gPIGq5bK2KCTBWkzzJNpHFoY8JUukXL/exec';
-
-function callGAS(fn, ...args) {
-  let url = `${WEB_APP_URL}?action=${fn}`;
-  
-  // เพิ่มพารามิเตอร์สำหรับฟังก์ชันที่ต้องใช้ข้อมูลเพิ่มเติม
-  if (fn === 'getAttendanceToday' || fn === 'getAttendanceLog') {
-    url += `&date=${args[0]}`;
-  }
-
-  const options = { method: 'GET' };
-  
-  // หากเป็นฟังก์ชันบันทึกข้อมูล (saveAttendance) ต้องใช้ POST
-  if (fn === 'saveAttendance') {
-    options.method = 'POST';
-    options.body = JSON.stringify(args[0]); // ใช้ body แทน payload
-  }
-
-  return fetch(url, options).then(res => res.json());
-}
-// ============================================================
 // STATE
 // ============================================================
 let allStudents = [];
@@ -541,24 +518,31 @@ const DEPT_KEYS = {
 // ============================================================
 // GAS BRIDGE — เรียกฟังก์ชันใน Code.gs
 // ============================================================
-// เปลี่ยนฟังก์ชัน loadStudents เป็นแบบนี้
-function loadStudents() {
-  showLoading(true);
-  var url = 'https://script.google.com/macros/s/AKfycbwy0jjqNph0MGvyUfcmtydSU2N2AfxZWZw23gPIGq5bK2KCTBWkzzJNpHFoY8JUukXL/exec?action=getStudents';
+function callGAS(fn, ...args) {
+  return new Promise((ok, fail) => {
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run.withSuccessHandler(ok).withFailureHandler(fail)[fn](...args);
+    } else {
+      // Demo mode (ทดสอบนอก GAS)
+      console.warn('[DEMO] GAS ไม่ได้เชื่อมต่อ ใช้ข้อมูลตัวอย่าง');
+      setTimeout(() => ok(demoData(fn, ...args)), 300);
+    }
+  });
+}
 
-  fetch(url)
-    .then(response => response.json())
-    .then(students => {
-      allStudents = students || [];
-      // ถ้ามีฟังก์ชัน loadChecked ที่เรียกผ่าน GAS อยู่ ต้องเปลี่ยนเป็น fetch ด้วย
-      // สำหรับตอนนี้ให้ลอง renderList ดูก่อน
-      showLoading(false);
-      renderList();
-    })
-    .catch(err => {
-      showLoading(false);
-      showToast('โหลดข้อมูลไม่สำเร็จ: ' + err.message, 'error');
-    });
+function demoData(fn, ...args) {
+  if (fn === 'getStudents') return { success: true, data: [
+    { rowIndex:2, nickname:'ป๊อป', fullname:'ปภาดา รัตนสุข',    school:'สาธิตจุฬา',    dept:'สถาปัตยกรรม',  phone:'0812345678', course:'เหมา ติวสด + ออนไลน์',           remaining:'',  expire:'30/07/2568', period:'1', buttons:['ติวสด','วิชาภาค','วาดเส้น'], warnRemaining:false, warnExpire:false },
+    { rowIndex:3, nickname:'มิ้น', fullname:'ณิชาภัทร พิริยะ',  school:'เตรียมอุดม',   dept:'ศิลปกรรม',     phone:'0823456789', course:'ติวสด เข้ม 30 วัน',               remaining:'5', expire:'20/06/2568', period:'2', buttons:['ติวสด'],                     warnRemaining:false, warnExpire:true  },
+    { rowIndex:4, nickname:'ไอซ์', fullname:'ธนัท วงษ์สวรรค์', school:'เตรียมอุดม',   dept:'นิเทศศิลป์',   phone:'0834567890', course:'คอร์สออนไลน์ [10 ครั้ง/30 วัน]', remaining:'2', expire:'18/06/2568', period:'1', buttons:['วิชาภาค'],                   warnRemaining:true,  warnExpire:true  },
+    { rowIndex:5, nickname:'เฟิร์น',fullname:'วิชญา มาลัย',   school:'สวนกุหลาบ',     dept:'ภาพยนตร์',     phone:'0845678901', course:'Mix เหมา+ออนไลน์',               remaining:'',  expire:'10/08/2568', period:'3', buttons:['ติวสด','วิชาภาค','วาดเส้น'], warnRemaining:false, warnExpire:false },
+    { rowIndex:6, nickname:'นัท',  fullname:'วรนัน ศรีเมือง',  school:'หอวัง',         dept:'อนิเมชัน',     phone:'0856789012', course:'คอร์สออนไลน์ [Buffet/30 วัน]',   remaining:'8', expire:'25/07/2568', period:'1', buttons:['วิชาภาค','วาดเส้น'],         warnRemaining:false, warnExpire:false },
+    { rowIndex:7, nickname:'บีม',  fullname:'ปัณณทัต ชนะภัย', school:'สาธิตเกษตร',   dept:'พื้นฐาน',      phone:'0867890123', course:'คอร์สออนไลน์ [12 ครั้ง/30 วัน]', remaining:'3', expire:'05/07/2568', period:'2', buttons:['วาดเส้น'],                   warnRemaining:false, warnExpire:false },
+  ]};
+  if (fn === 'getAttendanceToday') return { success: true, checkedPhones: {} };
+  if (fn === 'saveAttendance')     return { success: true };
+  if (fn === 'getAttendanceLog')   return { success: true, data: [], countTutor: 0, countOnline: 0 };
+  return null;
 }
 
 // ============================================================
