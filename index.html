@@ -57,17 +57,21 @@ a{color:var(--primary)}
 /* ── Tabs ────────────────────────────────── */
 .tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 20px;gap:2px}
 .tab{padding:11px 16px;border:none;background:none;font-size:14px;font-weight:500;color:var(--txt2);
-  border-bottom:3px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:6px;transition:color .15s,border-color .15s}
+border-bottom:3px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:6px;transition:color .15s,border-color .15s}
 .tab:hover{color:var(--txt)}
 .tab.active{color:var(--primary);border-bottom-color:var(--primary)}
 
 /* ── Pages ───────────────────────────────── */
+.page{padding:20px;max-width:1080px;margin:0 auto}
 .page{display:none;padding:20px;max-width:1080px;margin:0 auto}
 .page.active{display:block}
 
 /* ── Toolbar ─────────────────────────────── */
-.toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;background:var(--surface);
-  padding:14px 16px;border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--sh)}
+.toolbar{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;background:var(--surface);
+  padding:14px 16px;border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--sh);
+  position: sticky;top: 60px;z-index: 90;
+}
 .lbl{font-size:13px;color:var(--txt2);font-weight:600;white-space:nowrap}
 .field{display:flex;align-items:center;gap:8px}
 .field input[type=date],.field select{
@@ -171,7 +175,7 @@ a{color:var(--primary)}
 /* ── Responsive ──────────────────────────── */
 @media(max-width:768px){
   .page{padding:14px}
-  .toolbar{flex-direction:column;align-items:stretch;gap:10px}
+  .toolbar{flex-direction:column;align-items:stretch;gap:10px;position:relative;top:0}
   .field{flex-wrap:wrap}
   .sep{display:none}
   .card-row{flex-direction:column;gap:10px}
@@ -222,6 +226,7 @@ a{color:var(--primary)}
       <span class="lbl">📚 ภาควิชา</span>
       <select id="att-dept" onchange="renderAttendance()">
         <option value="">— เลือกภาควิชา —</option>
+        <option value="all">ทั้งหมด</option>
         <option value="ศิลปกรรม">ศิลปกรรม</option>
         <option value="สถาปัตยกรรม">สถาปัตยกรรม</option>
         <option value="ภูมิสถาปัตยกรรม">ภูมิสถาปัตยกรรม/สถาปัตยกรรมไทย</option>
@@ -269,7 +274,7 @@ a{color:var(--primary)}
 /* ─────────────────────────────────────────
    CONFIG
 ───────────────────────────────────────── */
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyAZ9KqQRgH8NqBRNTvGHN2lkDDmb0neHQnH2IOMbRwvlKNqLuNVyqWvxqaE3RW9XOH/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbw6_JEBX8IJ9YU-EGXjARP6KZkCdjKa9Kfkw_O1yj_T8Su9xpVaUZrUL3wsj2HlUWK9/exec';
 
 /* ─────────────────────────────────────────
    STATE
@@ -338,7 +343,7 @@ async function fetchStudents() {
    FETCH LOG for date
 ───────────────────────────────────────── */
 async function fetchLog(date) {
-  if (logDate === date) return logCache;  
+  if (logDate === date) return logCache;
   try {
     const data = await gasCall({ action: 'getLog', date });
     logCache = data.rows || [];
@@ -357,10 +362,8 @@ function courseMatchesFormat(courseRaw, format) {
   const c = String(courseRaw).toLowerCase();
   
   if (format === 'live') {
-    // ติวสด: เหมา, Mix, ติวสด
     return /เหมา|mix|ติวสด/.test(c);
   } else {
-    // ออนไลน์: ออนไลน์, Mix, เหมา
     return /ออนไลน์|mix|เหมา/.test(c);
   }
 }
@@ -370,10 +373,10 @@ function courseMatchesFormat(courseRaw, format) {
 ───────────────────────────────────────── */
 function buildBtns(s, date, serverChecked) {
   const c = s.courseRaw || '';
-  
+  const cLower = String(c).toLowerCase();
+
   if (formatMode === 'live') {
-    // ติวสด: แสดงปุ่ม "ติวสด" เดียว
-    const done = serverChecked.has(`${normPhone(s.phone)}__ติวสด`) || isCheckedLocal(s.phone, date, 'ติวสด');
+    const done = serverChecked.has(`${normPhone(s.phone)}__ติวสด`);
     return [{
       type: 'ติวสด',
       label: '✏️ ติวสด',
@@ -381,27 +384,21 @@ function buildBtns(s, date, serverChecked) {
       done
     }];
   } else {
-    // ออนไลน์: แสดงปุ่มตามประเภท
     let types = [];
-    
-    if (/buffet|mix|เหมา/.test(c)) {
-      // Buffet, Mix, เหมา: แสดง วิชาภาค และ วาดเส้น
+    if (/buffet|mix|เหมา/i.test(cLower)) {
       types = [
         { type: 'วิชาภาค', label: '📚 วิชาภาค', class: 'online' },
         { type: 'วาดเส้น', label: '🖊️ วาดเส้น', class: 'online' }
       ];
-    } else if (/\[10\s*ครั้ง/.test(c)) {
-      // 10 ครั้ง: วิชาภาคเท่านั้น
+    } else if (/\[10\s*ครั้ง/.test(cLower)) {
       types = [
         { type: 'วิชาภาค', label: '📚 วิชาภาค', class: 'online' }
       ];
-    } else if (/\[12\s*ครั้ง/.test(c)) {
-      // 12 ครั้ง: วาดเส้นเท่านั้น
+    } else if (/\[12\s*ครั้ง/.test(cLower)) {
       types = [
         { type: 'วาดเส้น', label: '🖊️ วาดเส้น', class: 'online' }
       ];
     } else {
-      // ค่าเริ่มต้น
       types = [
         { type: 'วิชาภาค', label: '📚 วิชาภาค', class: 'online' }
       ];
@@ -409,7 +406,7 @@ function buildBtns(s, date, serverChecked) {
 
     return types.map(t => ({
       ...t,
-      done: serverChecked.has(`${normPhone(s.phone)}__${t.type}`) || isCheckedLocal(s.phone, date, t.type)
+      done: serverChecked.has(`${normPhone(s.phone)}__${t.type}`)
     }));
   }
 }
@@ -435,7 +432,7 @@ async function renderAttendance() {
 
   // ── filter ──
   let list = students.filter(s => {
-    const dm = s.dept && s.dept.includes(dept);
+    const dm = (dept === 'all') || (s.dept && s.dept.includes(dept));
     const fm = courseMatchesFormat(s.courseRaw, formatMode);
     return dm && fm;
   });
@@ -463,6 +460,13 @@ async function renderAttendance() {
     const btns = buildBtns(s, date, serverChecked);
     const anyDone = btns.some(b => b.done);
     if (anyDone) checkedCount++;
+
+    // จัดการเงื่อนไขล็อคประเภทอื่นถ้าในโหมดออนไลน์มีประเภทหนึ่งเช็คเสร็จแล้ว
+    if (formatMode === 'online' && anyDone) {
+      btns.forEach(b => {
+        if (!b.done) b.locked = true;
+      });
+    }
 
     const isMao   = /เหมา|mix/i.test(s.courseRaw);
     const remNum  = parseInt(s.remaining);
@@ -520,41 +524,33 @@ async function renderAttendance() {
 
 function renderCBtn(b, s, date) {
   if (b.done) return `<button class="cbtn done">${b.label} ✓</button>`;
-  const onclick = `doCheck(this,'${esc(s.phone)}','${esc(s.nickname)}','${esc(s.school)}','${esc(s.dept)}','${b.type}','${esc(b.label)}','${date}')`;
+  if (b.locked) return `<button class="cbtn locked">${b.label}</button>`;
+  const onclick = `doCheck(this,'${esc(s.phone)}','${esc(s.nickname)}','${esc(s.school)}','${esc(s.dept)}','${b.type}','${esc(b.label)}','${date}','${esc(s.round)}')`;
   return `<button class="cbtn ${b.class}" onclick="${onclick}">${b.label}</button>`;
 }
 
 /* ─────────────────────────────────────────
    DO CHECK
 ───────────────────────────────────────── */
-async function doCheck(btnEl, phone, nickname, school, dept, type, label, date) {
-  if (btnEl.classList.contains('saving') || btnEl.classList.contains('done')) return;
+async function doCheck(btnEl, phone, nickname, school, dept, type, label, date, round) {
+  if (btnEl.classList.contains('saving') || btnEl.classList.contains('done') || btnEl.classList.contains('locked')) return;
   btnEl.classList.add('saving');
   btnEl.textContent = '⏳…';
 
   try {
     const resp = await gasPost({
       action: 'addLog',
-      date, phone, nickname, school, dept, round: '', type
+      date, phone, nickname, school, dept, round, type
     });
     if (resp && resp.error) throw new Error(resp.error);
 
     markLocal(phone, date, type);
-    logCache.push({ date, phone, nickname, school, dept, round: '', type });
-
+    logCache.push({ date, phone, nickname, school, dept, round, type });
     btnEl.classList.remove('saving');
-    btnEl.classList.add('done');
-    btnEl.textContent = label + ' ✓';
+    
+    // โหลด Render อัปเดต UI ใหม่อัตโนมัติ เพื่อกระจายสถานะล็อคปุ่มตรงตามกฎ
+    await renderAttendance();
     showToast(`✅ ${nickname} — ${label}`, 'ok');
-
-    const card = btnEl.closest('.card');
-    if (card) {
-      const allBtns = card.querySelectorAll('.cbtn');
-      const allDone = [...allBtns].every(b => b.classList.contains('done'));
-      if (allDone) card.classList.add('done');
-    }
-
-    updateChips();
   } catch(e) {
     btnEl.classList.remove('saving');
     btnEl.textContent = label;
@@ -582,7 +578,6 @@ async function renderReport() {
     const data = await gasCall({ action: 'getLog', date });
     const allRows = data.rows || [];
     const rows = allRows.filter(r => isSameDate(r.date, date));
-
     if (!rows.length) {
       box.innerHTML = `<div class="state"><div class="state-ico">📭</div><p>ไม่มีข้อมูลวันที่ ${fmtDateISO(date)}</p></div>`;
       return;
@@ -594,7 +589,6 @@ async function renderReport() {
       if (r.type && r.type.includes('ติวสด')) liveCount++;
       else if (r.type) onlineCount++;
     });
-
     const tbody = rows.map((r,i) => `
 <tr>
   <td class="num">${i+1}</td>
@@ -603,7 +597,6 @@ async function renderReport() {
   <td style="font-size:13px;color:var(--txt2)">${esc(r.dept||'-')}</td>
   <td><span class="pill ${pillClass(r.type)}">${esc(r.type||'')}</span></td>
 </tr>`).join('');
-
     box.innerHTML = `
 <div class="chips">
   <div class="chip chip-b">📋 ${fmtDateISO(date)} — ${rows.length} รายการ</div>
