@@ -73,11 +73,11 @@ border-bottom:3px solid transparent;margin-bottom:-1px;display:flex;align-items:
   position: sticky;top: 60px;z-index: 90;
 }
 .lbl{font-size:13px;color:var(--txt2);font-weight:600;white-space:nowrap}
-.field{display:flex;align-items:center;gap:8px}
-.field input[type=date],.field select{
+.field{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.field input[type=date],.field input[type=tel],.field select{
   padding:8px 12px;border:1px solid var(--border);border-radius:var(--rs);
   background:var(--surface);font-size:14px;color:var(--txt);outline:none;transition:border-color .15s}
-.field input[type=date]:focus,.field select:focus{border-color:var(--primary)}
+.field input[type=date]:focus,.field input[type=tel]:focus,.field select:focus{border-color:var(--primary)}
 .sep{width:1px;height:30px;background:var(--border)}
 
 /* ── Toggle Switch ───────────────────────── */
@@ -120,7 +120,7 @@ border-bottom:3px solid transparent;margin-bottom:-1px;display:flex;align-items:
 .alerts{display:flex;flex-direction:column;gap:3px;margin-top:8px}
 .alert{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:var(--rs);font-size:12px;font-weight:500}
 .alert-w{background:var(--orange-l);color:#92400E}
-.alert-d{background:var(--red-l);color:#991B1B}
+.alert-d">background:var(--red-l);color:#991B1B}
 
 /* ── Check Buttons ───────────────────────── */
 .btns{display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0}
@@ -159,7 +159,6 @@ border-bottom:3px solid transparent;margin-bottom:-1px;display:flex;align-items:
 .num{color:var(--txt3);font-size:12px;font-weight:600;width:40px;text-align:center}
 .pill{display:inline-block;padding:3px 11px;border-radius:20px;font-size:12px;font-weight:600}
 .pill-live{background:#E8EFFF;color:var(--primary);font-weight:700}
-.pill-draw{background:#FFE5CC;color:#B8740F;font-weight:700}
 .pill-online{background:#FFE5CC;color:#B8740F;font-weight:700}
 
 /* ── Toast ───────────────────────────────── */
@@ -204,10 +203,12 @@ border-bottom:3px solid transparent;margin-bottom:-1px;display:flex;align-items:
   <button class="tab" onclick="goTab('report',this)">
     📊 รายงานประจำวัน
   </button>
+  <button class="tab" onclick="goTab('my-history',this)">
+    📜 ประวัติของฉัน
+  </button>
 </nav>
 
 <div class="page active" id="page-attendance">
-
   <div class="toolbar">
     <div class="field">
       <span class="lbl">📅 วันที่</span>
@@ -268,6 +269,22 @@ border-bottom:3px solid transparent;margin-bottom:-1px;display:flex;align-items:
   </div>
 </div>
 
+<div class="page" id="page-my-history">
+  <div class="toolbar">
+    <div class="field">
+      <span class="lbl">📱 ค้นหาประวัติด้วยเบอร์โทรศัพท์</span>
+      <input type="tel" id="history-phone" placeholder="เช่น 0812345678" style="min-width:200px;"/>
+      <button class="cbtn live" onclick="fetchStudentHistory()" style="min-width:80px; padding:8px 20px;">🔍 ค้นหา</button>
+    </div>
+  </div>
+  <div id="history-content">
+    <div class="state">
+      <div class="state-ico">🔍</div>
+      <p>กรอกเบอร์โทรศัพท์สมัครเรียน เพื่อตรวจสอบประวัติเข้าเรียนย้อนหลังของตนเอง</p>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -283,7 +300,7 @@ let students    = [];
 let logCache    = [];
 let logDate     = '';
 let checked     = {};
-let formatMode  = 'live';  // 'live' หรือ 'online'
+let formatMode  = 'live';
 
 /* ─────────────────────────────────────────
    INIT
@@ -296,9 +313,6 @@ window.addEventListener('DOMContentLoaded', () => {
   fetchStudents();
 });
 
-/* ─────────────────────────────────────────
-   FORMAT TOGGLE
-───────────────────────────────────────── */
 function setFormat(mode, el) {
   formatMode = mode;
   document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
@@ -307,12 +321,11 @@ function setFormat(mode, el) {
 }
 
 /* ─────────────────────────────────────────
-   GAS HELPER
+   GAS API CALLS
 ───────────────────────────────────────── */
 function gasCall(params) {
   const qs = new URLSearchParams(params).toString();
-  return fetch(`${GAS_URL}?${qs}`)
-    .then(r => r.json());
+  return fetch(`${GAS_URL}?${qs}`).then(r => r.json());
 }
 function gasPost(body) {
   return fetch(GAS_URL, {
@@ -322,9 +335,6 @@ function gasPost(body) {
   }).then(r => r.json());
 }
 
-/* ─────────────────────────────────────────
-   FETCH STUDENTS
-───────────────────────────────────────── */
 async function fetchStudents() {
   setSyncState('loading','กำลังโหลด…');
   try {
@@ -339,9 +349,6 @@ async function fetchStudents() {
   }
 }
 
-/* ─────────────────────────────────────────
-   FETCH LOG for date
-───────────────────────────────────────── */
 async function fetchLog(date) {
   if (logDate === date) return logCache;
   try {
@@ -354,13 +361,9 @@ async function fetchLog(date) {
   }
 }
 
-/* ─────────────────────────────────────────
-   CHECK IF COURSE MATCHES FORMAT
-───────────────────────────────────────── */
 function courseMatchesFormat(courseRaw, format) {
   if (!courseRaw) return false;
   const c = String(courseRaw).toLowerCase();
-  
   if (format === 'live') {
     return /เหมา|mix|ติวสด/.test(c);
   } else {
@@ -368,21 +371,13 @@ function courseMatchesFormat(courseRaw, format) {
   }
 }
 
-/* ─────────────────────────────────────────
-   BUILD BUTTONS logic
-───────────────────────────────────────── */
 function buildBtns(s, date, serverChecked) {
   const c = s.courseRaw || '';
   const cLower = String(c).toLowerCase();
 
   if (formatMode === 'live') {
     const done = serverChecked.has(`${normPhone(s.phone)}__ติวสด`);
-    return [{
-      type: 'ติวสด',
-      label: '✏️ ติวสด',
-      class: 'live',
-      done
-    }];
+    return [{ type: 'ติวสด', label: '✏️ ติวสด', class: 'live', done }];
   } else {
     let types = [];
     if (/buffet|mix|เหมา/i.test(cLower)) {
@@ -391,19 +386,12 @@ function buildBtns(s, date, serverChecked) {
         { type: 'วาดเส้น', label: '🖊️ วาดเส้น', class: 'online' }
       ];
     } else if (/\[10\s*ครั้ง/.test(cLower)) {
-      types = [
-        { type: 'วิชาภาค', label: '📚 วิชาภาค', class: 'online' }
-      ];
+      types = [{ type: 'วิชาภาค', label: '📚 วิชาภาค', class: 'online' }];
     } else if (/\[12\s*ครั้ง/.test(cLower)) {
-      types = [
-        { type: 'วาดเส้น', label: '🖊️ วาดเส้น', class: 'online' }
-      ];
+      types = [{ type: 'วาดเส้น', label: '🖊️ วาดเส้น', class: 'online' }];
     } else {
-      types = [
-        { type: 'วิชาภาค', label: '📚 วิชาภาค', class: 'online' }
-      ];
+      types = [{ type: 'วิชาภาค', label: '📚 วิชาภาค', class: 'online' }];
     }
-
     return types.map(t => ({
       ...t,
       done: serverChecked.has(`${normPhone(s.phone)}__${t.type}`)
@@ -412,7 +400,7 @@ function buildBtns(s, date, serverChecked) {
 }
 
 /* ─────────────────────────────────────────
-   RENDER ATTENDANCE
+   RENDER RENDER ATTENDANCE
 ───────────────────────────────────────── */
 async function renderAttendance() {
   const date  = document.getElementById('att-date').value;
@@ -430,7 +418,6 @@ async function renderAttendance() {
     return;
   }
 
-  // ── filter ──
   let list = students.filter(s => {
     const dm = (dept === 'all') || (s.dept && s.dept.includes(dept));
     const fm = courseMatchesFormat(s.courseRaw, formatMode);
@@ -443,14 +430,12 @@ async function renderAttendance() {
     return;
   }
 
-  // ── sync log from sheet for this date ──
   const logRows = await fetchLog(date);
   const serverChecked = new Set();
   logRows.forEach(r => {
     if (r.phone && r.type) serverChecked.add(`${normPhone(r.phone)}__${r.type}`);
   });
 
-  // ── today alerts ──
   const today   = new Date(date);
   const warn7   = new Date(date);
   warn7.setDate(warn7.getDate() + 7);
@@ -461,11 +446,8 @@ async function renderAttendance() {
     const anyDone = btns.some(b => b.done);
     if (anyDone) checkedCount++;
 
-    // จัดการเงื่อนไขล็อคประเภทอื่นถ้าในโหมดออนไลน์มีประเภทหนึ่งเช็คเสร็จแล้ว
     if (formatMode === 'online' && anyDone) {
-      btns.forEach(b => {
-        if (!b.done) b.locked = true;
-      });
+      btns.forEach(b => { if (!b.done) b.locked = true; });
     }
 
     const isMao   = /เหมา|mix/i.test(s.courseRaw);
@@ -478,7 +460,6 @@ async function renderAttendance() {
         ? `<div class="alert alert-d">⚠️ ครั้งเรียนหมดแล้ว</div>`
         : `<div class="alert alert-w">⏳ เหลือ ${remNum} ครั้ง</div>`;
     }
-    
     if (s.expiry) {
       const exp = parseDateAny(s.expiry);
       if (exp) {
@@ -514,8 +495,6 @@ async function renderAttendance() {
   });
 
   showList(cards.join(''));
-
-  // chips
   chips.style.display = 'flex';
   document.getElementById('chip-total').textContent   = `👥 ${list.length} คน`;
   document.getElementById('chip-checked').textContent  = `✅ เช็คแล้ว ${checkedCount}`;
@@ -530,7 +509,7 @@ function renderCBtn(b, s, date) {
 }
 
 /* ─────────────────────────────────────────
-   DO CHECK
+   ACTION CONTROL
 ───────────────────────────────────────── */
 async function doCheck(btnEl, phone, nickname, school, dept, type, label, date, round) {
   if (btnEl.classList.contains('saving') || btnEl.classList.contains('done') || btnEl.classList.contains('locked')) return;
@@ -538,17 +517,13 @@ async function doCheck(btnEl, phone, nickname, school, dept, type, label, date, 
   btnEl.textContent = '⏳…';
 
   try {
-    const resp = await gasPost({
-      action: 'addLog',
-      date, phone, nickname, school, dept, round, type
-    });
+    const resp = await gasPost({ action: 'addLog', date, phone, nickname, school, dept, round, type });
     if (resp && resp.error) throw new Error(resp.error);
 
     markLocal(phone, date, type);
     logCache.push({ date, phone, nickname, school, dept, round, type });
     btnEl.classList.remove('saving');
     
-    // โหลด Render อัปเดต UI ใหม่อัตโนมัติ เพื่อกระจายสถานะล็อคปุ่มตรงตามกฎ
     await renderAttendance();
     showToast(`✅ ${nickname} — ${label}`, 'ok');
   } catch(e) {
@@ -556,14 +531,6 @@ async function doCheck(btnEl, phone, nickname, school, dept, type, label, date, 
     btnEl.textContent = label;
     showToast('❌ ' + e.message, 'err');
   }
-}
-
-function updateChips() {
-  const all   = document.querySelectorAll('.card');
-  const done  = document.querySelectorAll('.card.done');
-  document.getElementById('chip-total').textContent   = `👥 ${all.length} คน`;
-  document.getElementById('chip-checked').textContent  = `✅ เช็คแล้ว ${done.length}`;
-  document.getElementById('chip-left').textContent     = `⏳ รอเช็ค ${all.length - done.length}`;
 }
 
 /* ─────────────────────────────────────────
@@ -583,7 +550,6 @@ async function renderReport() {
       return;
     }
 
-    // นับประเภท
     let liveCount = 0, onlineCount = 0;
     rows.forEach(r => {
       if (r.type && r.type.includes('ติวสด')) liveCount++;
@@ -612,6 +578,60 @@ async function renderReport() {
   }
 }
 
+/* ─────────────────────────────────────────
+   STUDENT HISTORY LOOKUP (NEW)
+───────────────────────────────────────── */
+async function fetchStudentHistory() {
+  const phoneInput = document.getElementById('history-phone').value.trim();
+  const box = document.getElementById('history-content');
+  if (!phoneInput) {
+    showToast('❌ กรุณากรอกเบอร์โทรศัพท์', 'err');
+    return;
+  }
+
+  box.innerHTML = `<div class="state"><div class="spinner"></div><p>กำลังดึงประวัติการเข้าเรียนของคุณ…</p></div>`;
+
+  try {
+    const data = await gasCall({ action: 'getStudentHistory', phone: phoneInput });
+    const rows = data.rows || [];
+
+    if (!rows.length) {
+      box.innerHTML = `<div class="state"><div class="state-ico">📭</div><p>ไม่พบประวัติการเข้าเรียนของเบอร์โทรศัพท์นี้<br><small>ตรวจสอบความถูกต้อง หรือติดต่อแอดมิน</small></p></div>`;
+      return;
+    }
+
+    const studentName = rows[0].nickname || 'นักเรียน';
+    const tbody = rows.map((r, i) => `
+<tr>
+  <td class="num">${i+1}</td>
+  <td><strong>${fmtDateISO(r.date)}</strong></td>
+  <td>${esc(r.dept || '—')}</td>
+  <td style="text-align:center;">${esc(r.round || '—')}</td>
+  <td><span class="pill ${pillClass(r.type)}">${esc(r.type || '—')}</span></td>
+</tr>`).join('');
+
+    box.innerHTML = `
+<div class="chips" style="margin-bottom:14px;">
+  <div class="chip chip-b">👤 ชื่อเล่น: ${esc(studentName)}</div>
+  <div class="chip chip-g">📈 เข้าเรียนทั้งหมด: ${rows.length} ครั้ง</div>
+</div>
+<table class="rtable">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>วันที่เข้าเรียน</th>
+      <th>ภาควิชา</th>
+      <th style="text-align:center;">รอบคอร์สที่</th>
+      <th>รูปแบบวิชา</th>
+    </tr>
+  </thead>
+  <tbody>${tbody}</tbody>
+</table>`;
+  } catch(e) {
+    box.innerHTML = `<div class="state"><div class="state-ico">⚠️</div><p>เกิดข้อผิดพลาด: ${e.message}</p></div>`;
+  }
+}
+
 function pillClass(t) {
   if (!t) return '';
   if (t.includes('ติวสด')) return 'pill-live';
@@ -619,22 +639,19 @@ function pillClass(t) {
 }
 
 /* ─────────────────────────────────────────
-   LOCAL STORAGE
+   LOCAL STORAGE KEYS
 ───────────────────────────────────────── */
 function lcKey(ph, dt, tp) { return `anl__${ph}__${dt}__${tp}`; }
 function loadLocal() {
   try { checked = JSON.parse(localStorage.getItem('anl_checked')||'{}'); } catch{ checked={}; }
 }
 function markLocal(ph, dt, tp) { checked[lcKey(ph,dt,tp)]=true; localStorage.setItem('anl_checked',JSON.stringify(checked)); }
-function isCheckedLocal(ph, dt, tp) { return !!checked[lcKey(ph,dt,tp)]; }
 
 /* ─────────────────────────────────────────
-   UTILS
+   HELPERS & UTILS
 ───────────────────────────────────────── */
 function todayISO() { return new Date().toISOString().slice(0,10); }
-function normPhone(p) {
-  return String(p || '').replace(/[^0-9]/g, '').replace(/^0+/, '');
-}
+function normPhone(p) { return String(p || '').replace(/[^0-9]/g, '').replace(/^0+/, ''); }
 function isSameDate(logDateStr, targetIso) {
   if (!logDateStr || !targetIso) return false;
   return logDateStr.includes(targetIso) || targetIso.includes(logDateStr);
