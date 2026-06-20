@@ -73,11 +73,11 @@ border-bottom:3px solid transparent;margin-bottom:-1px;display:flex;align-items:
   position: sticky;top: 60px;z-index: 90;
 }
 .lbl{font-size:13px;color:var(--txt2);font-weight:600;white-space:nowrap}
-.field{display:flex;align-items:center;gap:8px}
-.field input[type=date],.field select{
+.field{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.field input[type=date],.field input[type=text],.field select{
   padding:8px 12px;border:1px solid var(--border);border-radius:var(--rs);
   background:var(--surface);font-size:14px;color:var(--txt);outline:none;transition:border-color .15s}
-.field input[type=date]:focus,.field select:focus{border-color:var(--primary)}
+.field input[type=date]:focus,.field input[type=text]:focus,.field select:focus{border-color:var(--primary)}
 .sep{width:1px;height:30px;background:var(--border)}
 
 /* ── Toggle Switch ───────────────────────── */
@@ -159,8 +159,13 @@ border-bottom:3px solid transparent;margin-bottom:-1px;display:flex;align-items:
 .num{color:var(--txt3);font-size:12px;font-weight:600;width:40px;text-align:center}
 .pill{display:inline-block;padding:3px 11px;border-radius:20px;font-size:12px;font-weight:600}
 .pill-live{background:#E8EFFF;color:var(--primary);font-weight:700}
-.pill-draw{background:#FFE5CC;color:#B8740F;font-weight:700}
 .pill-online{background:#FFE5CC;color:#B8740F;font-weight:700}
+
+/* ── Profile Block ────────────────────────── */
+.profile-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:20px;box-shadow:var(--sh);}
+.profile-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;}
+.profile-grid div{font-size:14px;color:var(--txt);}
+.profile-grid strong{color:var(--primary);font-weight:600;}
 
 /* ── Toast ───────────────────────────────── */
 #toast{
@@ -204,10 +209,12 @@ border-bottom:3px solid transparent;margin-bottom:-1px;display:flex;align-items:
   <button class="tab" onclick="goTab('report',this)">
     📊 รายงานประจำวัน
   </button>
+  <button class="tab" onclick="goTab('my-history',this)">
+    📜 ประวัติเข้าเรียน
+  </button>
 </nav>
 
 <div class="page active" id="page-attendance">
-
   <div class="toolbar">
     <div class="field">
       <span class="lbl">📅 วันที่</span>
@@ -268,6 +275,31 @@ border-bottom:3px solid transparent;margin-bottom:-1px;display:flex;align-items:
   </div>
 </div>
 
+<div class="page" id="page-my-history">
+  <div class="toolbar">
+    <div class="field">
+      <span class="lbl">🔍 ค้นหาประวัติด้วยชื่อเล่น</span>
+      <input type="text" id="history-nickname" placeholder="ระบุชื่อเล่น" style="min-width:180px;"/>
+      <button class="cbtn live" onclick="fetchStudentHistory()" style="min-width:80px; padding:8px 20px;">🔍 ค้นหา</button>
+    </div>
+  </div>
+
+  <div id="history-selector-container" style="margin-bottom: 16px; display: none;">
+    <div class="field" style="background: var(--surface); padding: 12px 16px; border-radius: var(--r); border: 1px solid var(--accent); box-shadow: var(--sh);">
+      <span class="lbl" style="color: var(--accent);">⚠️ พบชื่อซ้ำกัน โปรดเลือกข้อมูล</span>
+      <select id="history-student-select" onchange="onHistoryStudentSelectChange()" style="padding:8px 12px; min-width: 280px; border-color: var(--accent);">
+      </select>
+    </div>
+  </div>
+
+  <div id="history-content">
+    <div class="state">
+      <div class="state-ico">🔍</div>
+      <p>กรอกชื่อเล่นเพื่อตรวจสอบประวัติการเข้าเรียน</p>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -283,7 +315,8 @@ let students    = [];
 let logCache    = [];
 let logDate     = '';
 let checked     = {};
-let formatMode  = 'live';  // 'live' หรือ 'online'
+let formatMode  = 'live';
+let historyData = { students: [], logs: [] }; // จัดเก็บข้อมูลผลลัพธ์จากการค้นหาประวัติย้อนหลังล่าสุด
 
 /* ─────────────────────────────────────────
    INIT
@@ -296,9 +329,6 @@ window.addEventListener('DOMContentLoaded', () => {
   fetchStudents();
 });
 
-/* ─────────────────────────────────────────
-   FORMAT TOGGLE
-───────────────────────────────────────── */
 function setFormat(mode, el) {
   formatMode = mode;
   document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
@@ -307,12 +337,11 @@ function setFormat(mode, el) {
 }
 
 /* ─────────────────────────────────────────
-   GAS HELPER
+   GAS API CALLS
 ───────────────────────────────────────── */
 function gasCall(params) {
   const qs = new URLSearchParams(params).toString();
-  return fetch(`${GAS_URL}?${qs}`)
-    .then(r => r.json());
+  return fetch(`${GAS_URL}?${qs}`).then(r => r.json());
 }
 function gasPost(body) {
   return fetch(GAS_URL, {
@@ -322,9 +351,6 @@ function gasPost(body) {
   }).then(r => r.json());
 }
 
-/* ─────────────────────────────────────────
-   FETCH STUDENTS
-───────────────────────────────────────── */
 async function fetchStudents() {
   setSyncState('loading','กำลังโหลด…');
   try {
@@ -339,9 +365,6 @@ async function fetchStudents() {
   }
 }
 
-/* ─────────────────────────────────────────
-   FETCH LOG for date
-───────────────────────────────────────── */
 async function fetchLog(date) {
   if (logDate === date) return logCache;
   try {
@@ -354,13 +377,9 @@ async function fetchLog(date) {
   }
 }
 
-/* ─────────────────────────────────────────
-   CHECK IF COURSE MATCHES FORMAT
-───────────────────────────────────────── */
 function courseMatchesFormat(courseRaw, format) {
   if (!courseRaw) return false;
   const c = String(courseRaw).toLowerCase();
-  
   if (format === 'live') {
     return /เหมา|mix|ติวสด/.test(c);
   } else {
@@ -368,21 +387,13 @@ function courseMatchesFormat(courseRaw, format) {
   }
 }
 
-/* ─────────────────────────────────────────
-   BUILD BUTTONS logic
-───────────────────────────────────────── */
 function buildBtns(s, date, serverChecked) {
   const c = s.courseRaw || '';
   const cLower = String(c).toLowerCase();
 
   if (formatMode === 'live') {
     const done = serverChecked.has(`${normPhone(s.phone)}__ติวสด`);
-    return [{
-      type: 'ติวสด',
-      label: '✏️ ติวสด',
-      class: 'live',
-      done
-    }];
+    return [{ type: 'ติวสด', label: '✏️ ติวสด', class: 'live', done }];
   } else {
     let types = [];
     if (/buffet|mix|เหมา/i.test(cLower)) {
@@ -391,19 +402,12 @@ function buildBtns(s, date, serverChecked) {
         { type: 'วาดเส้น', label: '🖊️ วาดเส้น', class: 'online' }
       ];
     } else if (/\[10\s*ครั้ง/.test(cLower)) {
-      types = [
-        { type: 'วิชาภาค', label: '📚 วิชาภาค', class: 'online' }
-      ];
+      types = [{ type: 'วิชาภาค', label: '📚 วิชาภาค', class: 'online' }];
     } else if (/\[12\s*ครั้ง/.test(cLower)) {
-      types = [
-        { type: 'วาดเส้น', label: '🖊️ วาดเส้น', class: 'online' }
-      ];
+      types = [{ type: 'วาดเส้น', label: '🖊️ วาดเส้น', class: 'online' }];
     } else {
-      types = [
-        { type: 'วิชาภาค', label: '📚 วิชาภาค', class: 'online' }
-      ];
+      types = [{ type: 'วิชาภาค', label: '📚 วิชาภาค', class: 'online' }];
     }
-
     return types.map(t => ({
       ...t,
       done: serverChecked.has(`${normPhone(s.phone)}__${t.type}`)
@@ -412,7 +416,7 @@ function buildBtns(s, date, serverChecked) {
 }
 
 /* ─────────────────────────────────────────
-   RENDER ATTENDANCE
+   RENDER RENDER ATTENDANCE
 ───────────────────────────────────────── */
 async function renderAttendance() {
   const date  = document.getElementById('att-date').value;
@@ -430,7 +434,6 @@ async function renderAttendance() {
     return;
   }
 
-  // ── filter ──
   let list = students.filter(s => {
     const dm = (dept === 'all') || (s.dept && s.dept.includes(dept));
     const fm = courseMatchesFormat(s.courseRaw, formatMode);
@@ -443,14 +446,12 @@ async function renderAttendance() {
     return;
   }
 
-  // ── sync log from sheet for this date ──
   const logRows = await fetchLog(date);
   const serverChecked = new Set();
   logRows.forEach(r => {
     if (r.phone && r.type) serverChecked.add(`${normPhone(r.phone)}__${r.type}`);
   });
 
-  // ── today alerts ──
   const today   = new Date(date);
   const warn7   = new Date(date);
   warn7.setDate(warn7.getDate() + 7);
@@ -461,11 +462,8 @@ async function renderAttendance() {
     const anyDone = btns.some(b => b.done);
     if (anyDone) checkedCount++;
 
-    // จัดการเงื่อนไขล็อคประเภทอื่นถ้าในโหมดออนไลน์มีประเภทหนึ่งเช็คเสร็จแล้ว
     if (formatMode === 'online' && anyDone) {
-      btns.forEach(b => {
-        if (!b.done) b.locked = true;
-      });
+      btns.forEach(b => { if (!b.done) b.locked = true; });
     }
 
     const isMao   = /เหมา|mix/i.test(s.courseRaw);
@@ -478,7 +476,6 @@ async function renderAttendance() {
         ? `<div class="alert alert-d">⚠️ ครั้งเรียนหมดแล้ว</div>`
         : `<div class="alert alert-w">⏳ เหลือ ${remNum} ครั้ง</div>`;
     }
-    
     if (s.expiry) {
       const exp = parseDateAny(s.expiry);
       if (exp) {
@@ -514,8 +511,6 @@ async function renderAttendance() {
   });
 
   showList(cards.join(''));
-
-  // chips
   chips.style.display = 'flex';
   document.getElementById('chip-total').textContent   = `👥 ${list.length} คน`;
   document.getElementById('chip-checked').textContent  = `✅ เช็คแล้ว ${checkedCount}`;
@@ -530,7 +525,7 @@ function renderCBtn(b, s, date) {
 }
 
 /* ─────────────────────────────────────────
-   DO CHECK
+   ACTION CONTROL
 ───────────────────────────────────────── */
 async function doCheck(btnEl, phone, nickname, school, dept, type, label, date, round) {
   if (btnEl.classList.contains('saving') || btnEl.classList.contains('done') || btnEl.classList.contains('locked')) return;
@@ -538,17 +533,13 @@ async function doCheck(btnEl, phone, nickname, school, dept, type, label, date, 
   btnEl.textContent = '⏳…';
 
   try {
-    const resp = await gasPost({
-      action: 'addLog',
-      date, phone, nickname, school, dept, round, type
-    });
+    const resp = await gasPost({ action: 'addLog', date, phone, nickname, school, dept, round, type });
     if (resp && resp.error) throw new Error(resp.error);
 
     markLocal(phone, date, type);
     logCache.push({ date, phone, nickname, school, dept, round, type });
     btnEl.classList.remove('saving');
     
-    // โหลด Render อัปเดต UI ใหม่อัตโนมัติ เพื่อกระจายสถานะล็อคปุ่มตรงตามกฎ
     await renderAttendance();
     showToast(`✅ ${nickname} — ${label}`, 'ok');
   } catch(e) {
@@ -556,14 +547,6 @@ async function doCheck(btnEl, phone, nickname, school, dept, type, label, date, 
     btnEl.textContent = label;
     showToast('❌ ' + e.message, 'err');
   }
-}
-
-function updateChips() {
-  const all   = document.querySelectorAll('.card');
-  const done  = document.querySelectorAll('.card.done');
-  document.getElementById('chip-total').textContent   = `👥 ${all.length} คน`;
-  document.getElementById('chip-checked').textContent  = `✅ เช็คแล้ว ${done.length}`;
-  document.getElementById('chip-left').textContent     = `⏳ รอเช็ค ${all.length - done.length}`;
 }
 
 /* ─────────────────────────────────────────
@@ -583,7 +566,6 @@ async function renderReport() {
       return;
     }
 
-    // นับประเภท
     let liveCount = 0, onlineCount = 0;
     rows.forEach(r => {
       if (r.type && r.type.includes('ติวสด')) liveCount++;
@@ -612,6 +594,145 @@ async function renderReport() {
   }
 }
 
+/* ─────────────────────────────────────────
+   STUDENT HISTORY LOOKUP (NEW CONDITION)
+───────────────────────────────────────── */
+async function fetchStudentHistory() {
+  const nicknameInput = document.getElementById('history-nickname').value.trim();
+  const box = document.getElementById('history-content');
+  const selectorContainer = document.getElementById('history-selector-container');
+  const selectEl = document.getElementById('history-student-select');
+
+  if (!nicknameInput) {
+    showToast('❌ กรุณากรอกชื่อเล่นสำหรับค้นหา', 'err');
+    return;
+  }
+
+  // เคลียร์ผลลัพธ์เดิมและเปิดสถานะ Loading
+  selectorContainer.style.display = 'none';
+  selectEl.innerHTML = '';
+  box.innerHTML = `<div class="state"><div class="spinner"></div><p>กำลังค้นหาข้อมูลของคุณ…</p></div>`;
+
+  try {
+    // ส่งคำขอค้นหาไปยัง backend โดยอิงตามชื่อเล่น
+    const data = await gasCall({ action: 'getStudentHistory', nickname: nicknameInput });
+    historyData = data; 
+    
+    const studentsList = data.students || [];
+
+    if (!studentsList.length) {
+      box.innerHTML = `<div class="state"><div class="state-ico">📭</div><p>ไม่พบประวัติการเรียนของชื่อเล่น "${esc(nicknameInput)}"<br><small>กรุณาตรวจสอบความถูกต้อง หรือติดต่อแอดมิน</small></p></div>`;
+      return;
+    }
+
+    if (studentsList.length === 1) {
+      // มีชื่อนี้เพียงคนเดียวในระบบ → แสดงตารางข้อมูลทันที
+      renderStudentHistoryData(studentsList[0].phone);
+    } else {
+      // มีชื่อซ้ำกันหลายคนในระบบ → แปลงข้อมูลเป็น Dropdown แยกตามเบอร์โทรศัพท์และโรงเรียน
+      selectEl.innerHTML = `<option value="">— กรุณาเลือกข้อมูลของคุณเพื่อตรวจสอบ —</option>` + 
+        studentsList.map(s => {
+          const formattedPhone = s.phone ? s.phone.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3') : 'ไม่ระบุเบอร์';
+          return `<option value="${esc(s.phone)}">${esc(s.nickname)} (เบอร์: ${esc(formattedPhone)}) — โรงเรียน ${esc(s.school || 'ไม่ระบุ')}</option>`;
+        }).join('');
+      
+      selectorContainer.style.display = 'block';
+      box.innerHTML = `<div class="state"><div class="state-ico">👆</div><p>พบชื่อเล่นซ้ำกัน ${studentsList.length} คน<br>กรุณาเลือกข้อมูลของคุณที่ตัวเลือกด้านบน</p></div>`;
+    }
+  } catch(e) {
+    box.innerHTML = `<div class="state"><div class="state-ico">⚠️</div><p>เกิดข้อผิดพลาด: ${e.message}</p></div>`;
+  }
+}
+
+// ฟังก์ชันเมื่อผู้เรียนคลิกเลือกประวัติจากเมนู Dropdown
+function onHistoryStudentSelectChange() {
+  const selectedPhone = document.getElementById('history-student-select').value;
+  if (selectedPhone) {
+    renderStudentHistoryData(selectedPhone);
+  } else {
+    document.getElementById('history-content').innerHTML = `<div class="state"><div class="state-ico">👆</div><p>กรุณาเลือกข้อมูลของคุณที่ช่องด้านบน</p></div>`;
+  }
+}
+
+// ฟังก์ชันสำหรับ Render ข้อมูลส่วนตัวด้านบน และจัดตารางแสดงผลประวัติการเรียน
+function renderStudentHistoryData(selectedPhone) {
+  const box = document.getElementById('history-content');
+  const student = historyData.students.find(s => s.phone === selectedPhone);
+  
+  if (!student) {
+    box.innerHTML = `<div class="state"><div class="state-ico">⚠️</div><p>ไม่พบโปรไฟล์นักเรียนที่เลือก</p></div>`;
+    return;
+  }
+
+  // ล้างเบอร์โทรศัพท์เพื่อคัดกรอง Log
+  const cleanSelectedPhone = String(selectedPhone).replace(/[^0-9]/g, '').replace(/^0+/, '');
+  const studentLogs = (historyData.logs || []).filter(l => {
+    return String(l.phone).replace(/[^0-9]/g, '').replace(/^0+/, '') === cleanSelectedPhone;
+  });
+
+  const displayPhone = student.phone ? student.phone.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3') : '—';
+  
+  // 1. Render แผงแสดงข้อมูลนักเรียนไว้ที่ด้านบนสุด
+  let headerHtml = `
+  <div class="profile-block">
+    <div class="profile-grid">
+      <div><strong>👤 ชื่อเล่น:</strong> ${esc(student.nickname)}</div>
+      <div><strong>🏫 โรงเรียน:</strong> ${esc(student.school || '—')}</div>
+      <div><strong>📱 เบอร์โทรศัพท์:</strong> ${esc(displayPhone)}</div>
+      <div><strong>🎓 ภาควิชา:</strong> ${esc(student.dept || '—')}</div>
+    </div>
+  </div>`;
+
+  if (!studentLogs.length) {
+    box.innerHTML = headerHtml + `<div class="state"><div class="state-ico">📭</div><p>ไม่พบประวัติการเช็คชื่อเข้าเรียนของนักเรียนคนนี้</p></div>`;
+    return;
+  }
+
+  // 2. จัดกลุ่ม Log เข้าเรียนตาม "รอบคอร์สเรียน"
+  const roundsMap = {};
+  studentLogs.forEach(l => {
+    const rName = l.round || 'ไม่ระบุรอบคอร์ส';
+    if (!roundsMap[rName]) roundsMap[rName] = [];
+    roundsMap[rName].push(l);
+  });
+
+  let tablesHtml = '';
+
+  // 3. วนลูปตารางแสดงผลแยกตามรอบคอร์สเรียน พร้อมรันจำนวนครั้งเรียนจากเก่าไปใหม่ (วันที่เรียนแรกสุด = ครั้งที่ 1)
+  Object.keys(roundsMap).forEach(rName => {
+    // เรียงวันที่จากอดีตไปปัจจุบัน (Ascending) เพื่อรัน "ครั้งที่ 1, 2, 3..." ตามลำดับเวลาจริงที่คุณต้องการ
+    const sortedLogs = roundsMap[rName].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    const tbody = sortedLogs.map((r, index) => `
+    <tr>
+      <td class="num" style="width: 120px; text-align: center; font-weight: bold; color: var(--primary);">ครั้งที่ ${index + 1}</td>
+      <td>${fmtDateISO(r.date)}</td>
+      <td><span class="pill ${pillClass(r.type)}">${esc(r.type || '—')}</span></td>
+    </tr>`).join('');
+
+    tablesHtml += `
+    <div style="margin-bottom: 25px;">
+      <div class="chip chip-b" style="margin-bottom: 10px; font-size: 14px; font-weight: 700; border-radius: var(--rs);">
+        🔄 รอบคอร์สเรียน: ${esc(rName)} (เข้าเรียนสะสมในรอบนี้ ${sortedLogs.length} ครั้ง)
+      </div>
+      <table class="rtable">
+        <thead>
+          <tr>
+            <th style="width: 130px; text-align: center;">ครั้งที่เข้าเรียน</th>
+            <th>วันที่เข้าเรียน</th>
+            <th>รูปแบบวิชา</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tbody}
+        </tbody>
+      </table>
+    </div>`;
+  });
+
+  box.innerHTML = headerHtml + tablesHtml;
+}
+
 function pillClass(t) {
   if (!t) return '';
   if (t.includes('ติวสด')) return 'pill-live';
@@ -619,22 +740,19 @@ function pillClass(t) {
 }
 
 /* ─────────────────────────────────────────
-   LOCAL STORAGE
+   LOCAL STORAGE KEYS
 ───────────────────────────────────────── */
 function lcKey(ph, dt, tp) { return `anl__${ph}__${dt}__${tp}`; }
 function loadLocal() {
   try { checked = JSON.parse(localStorage.getItem('anl_checked')||'{}'); } catch{ checked={}; }
 }
 function markLocal(ph, dt, tp) { checked[lcKey(ph,dt,tp)]=true; localStorage.setItem('anl_checked',JSON.stringify(checked)); }
-function isCheckedLocal(ph, dt, tp) { return !!checked[lcKey(ph,dt,tp)]; }
 
 /* ─────────────────────────────────────────
-   UTILS
+   HELPERS & UTILS
 ───────────────────────────────────────── */
 function todayISO() { return new Date().toISOString().slice(0,10); }
-function normPhone(p) {
-  return String(p || '').replace(/[^0-9]/g, '').replace(/^0+/, '');
-}
+function normPhone(p) { return String(p || '').replace(/[^0-9]/g, '').replace(/^0+/, ''); }
 function isSameDate(logDateStr, targetIso) {
   if (!logDateStr || !targetIso) return false;
   return logDateStr.includes(targetIso) || targetIso.includes(logDateStr);
